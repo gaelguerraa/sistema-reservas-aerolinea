@@ -1,0 +1,15 @@
+{
+  "name": "aerolinea-dominio",
+  "version": "1.0.0",
+  "description": "Componente de dominio (feat-dominio) del Sistema de Reservas de Aerolínea",
+  "main": "dist/index.js",
+  "scripts": {
+    "escenarios": "ts-node src/escenarios.ts",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.14.10"
+  }
+}

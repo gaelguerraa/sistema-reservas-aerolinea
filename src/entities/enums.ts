@@ -1,0 +1,11 @@
+export enum EstadoReserva {
+  PENDIENTE = "PENDIENTE",
+  CONFIRMADA = "CONFIRMADA",
+  CANCELADA = "CANCELADA",
+  COMPLETADA = "COMPLETADA",
+}
+
+export enum ClaseAsiento {
+  ECONOMICA = "ECONOMICA",
+  EJECUTIVA = "EJECUTIVA",
+}
