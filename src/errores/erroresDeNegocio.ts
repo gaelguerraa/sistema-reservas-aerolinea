@@ -43,3 +43,10 @@ export class RecursoNoEncontradoError extends DomainError {
     super(`${tipo} con id ${id} no fue encontrado.`);
   }
 }
+
+/** Regla: solo se permiten ciertos cambios de estado en una reserva. */
+export class TransicionInvalidaError extends DomainError {
+  constructor(reservaId: string, desde: string, hacia: string) {
+    super(`La reserva ${reservaId} no puede pasar de ${desde} a ${hacia}.`);
+  }
+}

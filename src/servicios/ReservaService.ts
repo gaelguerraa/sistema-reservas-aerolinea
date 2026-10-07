@@ -6,6 +6,7 @@ import {
   RecursoNoEncontradoError,
   ReservaCompletadaError,
   ReservaDuplicadaError,
+  TransicionInvalidaError,
   VueloSinDisponibilidadError,
 } from "../errores/erroresDeNegocio";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
@@ -82,6 +83,11 @@ export class ReservaService {
     const vuelo = this.repositorio.obtenerVuelo(reserva.vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", reserva.vueloId);
 
+    // Regla: solo se puede confirmar desde un estado que lo permita (PENDIENTE).
+    if (!reserva.puedePasarA(EstadoReserva.CONFIRMADA)) {
+      throw new TransicionInvalidaError(reserva.id, reserva.estado, EstadoReserva.CONFIRMADA);
+    }
+
     // Regla: no se puede confirmar una reserva si el vuelo ya alcanzó su
     // capacidad máxima de asientos confirmados.
     const confirmadas = this.repositorio
@@ -91,7 +97,7 @@ export class ReservaService {
       throw new CapacidadMaximaAlcanzadaError(reserva.vueloId);
     }
 
-    reserva.estado = EstadoReserva.CONFIRMADA;
+    reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
     this.repositorio.actualizarReserva(reserva);
     return reserva;
   }
@@ -105,7 +111,9 @@ export class ReservaService {
       throw new ReservaCompletadaError(reservaId);
     }
 
-    reserva.estado = EstadoReserva.CANCELADA;
+    // Regla: solo se puede cancelar desde un estado que lo permita
+    // (una reserva ya cancelada no se vuelve a cancelar).
+    reserva.cambiarEstado(EstadoReserva.CANCELADA);
     this.repositorio.actualizarReserva(reserva);
     return reserva;
   }
