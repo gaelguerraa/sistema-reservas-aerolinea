@@ -1,0 +1,86 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum ClaseAsiento {
+  ECONOMICA
+  EJECUTIVA
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum Rol {
+  ADMIN
+  CLIENTE
+}
+
+model Vuelo {
+  id       String    @id @db.VarChar(64)
+  origen   String    @db.VarChar(80)
+  destino  String    @db.VarChar(80)
+  fecha    DateTime
+  hora     String    @db.VarChar(5)
+  asientos Asiento[]
+  reservas Reserva[]
+
+  @@map("vuelos")
+}
+
+model Asiento {
+  id       String       @id @db.VarChar(64)
+  vueloId  String       @map("vuelo_id") @db.VarChar(64)
+  numero   String       @db.VarChar(10)
+  clase    ClaseAsiento
+  vuelo    Vuelo        @relation(fields: [vueloId], references: [id], onDelete: Cascade)
+  reservas Reserva[]
+
+  @@unique([vueloId, numero])
+  @@map("asientos")
+}
+
+model Pasajero {
+  id       String    @id @db.VarChar(64)
+  nombre   String    @db.VarChar(120)
+  contacto String    @db.VarChar(120)
+  reservas Reserva[]
+
+  @@map("pasajeros")
+}
+
+model Reserva {
+  id            String        @id @db.VarChar(64)
+  vueloId       String        @map("vuelo_id") @db.VarChar(64)
+  asientoId     String        @map("asiento_id") @db.VarChar(64)
+  pasajeroId    String        @map("pasajero_id") @db.VarChar(64)
+  estado        EstadoReserva
+  fechaCreacion DateTime      @map("fecha_creacion")
+  vuelo         Vuelo         @relation(fields: [vueloId], references: [id])
+  asiento       Asiento       @relation(fields: [asientoId], references: [id])
+  pasajero      Pasajero      @relation(fields: [pasajeroId], references: [id])
+
+  @@index([vueloId, estado])
+  @@index([asientoId, estado])
+  @@index([pasajeroId])
+  @@map("reservas")
+}
+
+model Usuario {
+  id           String   @id @db.VarChar(64)
+  email        String   @unique @db.VarChar(120)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  rol          Rol      @default(CLIENTE)
+  creadoEn     DateTime @default(now()) @map("creado_en")
+
+  @@map("usuarios")
+}
