@@ -6,6 +6,7 @@ import {
   RecursoNoEncontradoError,
   ReservaCompletadaError,
   ReservaDuplicadaError,
+  TransicionInvalidaError,
   VueloSinDisponibilidadError,
 } from "../errores/erroresDeNegocio";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
@@ -25,41 +26,47 @@ export class ReservaService {
   constructor(private readonly repositorio: IReservaRepositorio) {}
 
   /** Asientos de un vuelo que aún no están ocupados por ninguna reserva activa. */
-  consultarDisponibilidad(vueloId: string): number {
-    const vuelo = this.repositorio.obtenerVuelo(vueloId);
+  async consultarDisponibilidad(vueloId: string): Promise<number> {
+    const vuelo = await this.repositorio.obtenerVuelo(vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", vueloId);
 
-    const activas = this.repositorio.listarReservasActivasPorVuelo(vueloId);
+    const activas = await this.repositorio.listarReservasActivasPorVuelo(vueloId);
     return vuelo.capacidadTotal - activas.length;
   }
 
-  crearReserva(pasajeroId: string, vueloId: string, asientoId: string): Reserva {
-    const vuelo = this.repositorio.obtenerVuelo(vueloId);
+  async crearReserva(
+    pasajeroId: string,
+    vueloId: string,
+    asientoId: string
+  ): Promise<Reserva> {
+    const vuelo = await this.repositorio.obtenerVuelo(vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", vueloId);
 
-    const asiento = this.repositorio.obtenerAsiento(asientoId);
+    const asiento = await this.repositorio.obtenerAsiento(asientoId);
     if (!asiento || asiento.vueloId !== vueloId) {
       throw new RecursoNoEncontradoError("Asiento", asientoId);
     }
 
-    const pasajero = this.repositorio.obtenerPasajero(pasajeroId);
+    const pasajero = await this.repositorio.obtenerPasajero(pasajeroId);
     if (!pasajero) throw new RecursoNoEncontradoError("Pasajero", pasajeroId);
 
     // Regla: toda reserva debe crearse sobre un vuelo con al menos un asiento disponible.
-    if (this.consultarDisponibilidad(vueloId) <= 0) {
+    if ((await this.consultarDisponibilidad(vueloId)) <= 0) {
       throw new VueloSinDisponibilidadError(vueloId);
     }
 
     // Regla: no se puede reservar un asiento ya ocupado por otra reserva activa.
-    if (this.repositorio.listarReservasActivasPorAsiento(asientoId).length > 0) {
+    const ocupadas = await this.repositorio.listarReservasActivasPorAsiento(asientoId);
+    if (ocupadas.length > 0) {
       throw new AsientoOcupadoError(asientoId);
     }
 
     // Regla: un pasajero no puede tener dos reservas activas para el mismo asiento del mismo vuelo.
-    if (
-      this.repositorio.listarReservasActivasPorPasajeroYAsiento(pasajeroId, asientoId)
-        .length > 0
-    ) {
+    const duplicadas = await this.repositorio.listarReservasActivasPorPasajeroYAsiento(
+      pasajeroId,
+      asientoId
+    );
+    if (duplicadas.length > 0) {
       throw new ReservaDuplicadaError(pasajeroId, asientoId);
     }
 
@@ -71,33 +78,37 @@ export class ReservaService {
       EstadoReserva.PENDIENTE,
       new Date()
     );
-    this.repositorio.guardarReserva(reserva);
+    await this.repositorio.guardarReserva(reserva);
     return reserva;
   }
 
-  confirmarReserva(reservaId: string): Reserva {
-    const reserva = this.repositorio.obtenerReserva(reservaId);
+  async confirmarReserva(reservaId: string): Promise<Reserva> {
+    const reserva = await this.repositorio.obtenerReserva(reservaId);
     if (!reserva) throw new RecursoNoEncontradoError("Reserva", reservaId);
 
-    const vuelo = this.repositorio.obtenerVuelo(reserva.vueloId);
+    const vuelo = await this.repositorio.obtenerVuelo(reserva.vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", reserva.vueloId);
+
+    // Regla: solo se puede confirmar desde un estado que lo permita (PENDIENTE).
+    if (!reserva.puedePasarA(EstadoReserva.CONFIRMADA)) {
+      throw new TransicionInvalidaError(reserva.id, reserva.estado, EstadoReserva.CONFIRMADA);
+    }
 
     // Regla: no se puede confirmar una reserva si el vuelo ya alcanzó su
     // capacidad máxima de asientos confirmados.
-    const confirmadas = this.repositorio
-      .listarReservasActivasPorVuelo(reserva.vueloId)
-      .filter((r) => r.estado === EstadoReserva.CONFIRMADA);
+    const activas = await this.repositorio.listarReservasActivasPorVuelo(reserva.vueloId);
+    const confirmadas = activas.filter((r) => r.estado === EstadoReserva.CONFIRMADA);
     if (confirmadas.length >= vuelo.capacidadTotal) {
       throw new CapacidadMaximaAlcanzadaError(reserva.vueloId);
     }
 
-    reserva.estado = EstadoReserva.CONFIRMADA;
-    this.repositorio.actualizarReserva(reserva);
+    reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
+    await this.repositorio.actualizarReserva(reserva);
     return reserva;
   }
 
-  cancelarReserva(reservaId: string): Reserva {
-    const reserva = this.repositorio.obtenerReserva(reservaId);
+  async cancelarReserva(reservaId: string): Promise<Reserva> {
+    const reserva = await this.repositorio.obtenerReserva(reservaId);
     if (!reserva) throw new RecursoNoEncontradoError("Reserva", reservaId);
 
     // Regla: no se puede cancelar una reserva que ya se encuentre en estado "completada".
@@ -105,12 +116,14 @@ export class ReservaService {
       throw new ReservaCompletadaError(reservaId);
     }
 
-    reserva.estado = EstadoReserva.CANCELADA;
-    this.repositorio.actualizarReserva(reserva);
+    // Regla: solo se puede cancelar desde un estado que lo permita
+    // (una reserva ya cancelada no se vuelve a cancelar).
+    reserva.cambiarEstado(EstadoReserva.CANCELADA);
+    await this.repositorio.actualizarReserva(reserva);
     return reserva;
   }
 
-  historialDePasajero(pasajeroId: string): Reserva[] {
-    return this.repositorio.listarReservasPorPasajero(pasajeroId);
+  async historialDePasajero(pasajeroId: string): Promise<Reserva[]> {
+    return await this.repositorio.listarReservasPorPasajero(pasajeroId);
   }
 }

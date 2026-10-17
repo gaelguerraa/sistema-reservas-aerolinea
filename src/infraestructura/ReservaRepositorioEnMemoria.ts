@@ -5,21 +5,19 @@ import { Vuelo } from "../entities/Vuelo";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
 
 /**
- * Guarda todo en Maps en memoria. Sirve únicamente para poder probar el
- * dominio sin depender de ninguna base de datos real. Más adelante esta
- * clase se sustituye por una implementación con Prisma/TypeORM/lo que sea,
- * sin tocar el servicio de dominio.
+ * Guarda todo en Maps en memoria. Sirve para probar el dominio sin base de
+ * datos. Cumple el mismo contrato (asíncrono) que la implementación con Prisma.
  */
 export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   private vuelos = new Map<string, Vuelo>();
   private pasajeros = new Map<string, Pasajero>();
   private reservas = new Map<string, Reserva>();
 
-  obtenerVuelo(vueloId: string): Vuelo | undefined {
+  async obtenerVuelo(vueloId: string): Promise<Vuelo | undefined> {
     return this.vuelos.get(vueloId);
   }
 
-  obtenerAsiento(asientoId: string): Asiento | undefined {
+  async obtenerAsiento(asientoId: string): Promise<Asiento | undefined> {
     for (const vuelo of this.vuelos.values()) {
       const asiento = vuelo.asientos.find((a) => a.id === asientoId);
       if (asiento) return asiento;
@@ -27,53 +25,53 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
     return undefined;
   }
 
-  obtenerPasajero(pasajeroId: string): Pasajero | undefined {
+  async obtenerPasajero(pasajeroId: string): Promise<Pasajero | undefined> {
     return this.pasajeros.get(pasajeroId);
   }
 
-  obtenerReserva(reservaId: string): Reserva | undefined {
+  async obtenerReserva(reservaId: string): Promise<Reserva | undefined> {
     return this.reservas.get(reservaId);
   }
 
-  listarReservasActivasPorVuelo(vueloId: string): Reserva[] {
+  async listarReservasActivasPorVuelo(vueloId: string): Promise<Reserva[]> {
     return [...this.reservas.values()].filter(
       (r) => r.vueloId === vueloId && r.estaActiva()
     );
   }
 
-  listarReservasActivasPorAsiento(asientoId: string): Reserva[] {
+  async listarReservasActivasPorAsiento(asientoId: string): Promise<Reserva[]> {
     return [...this.reservas.values()].filter(
       (r) => r.asientoId === asientoId && r.estaActiva()
     );
   }
 
-  listarReservasActivasPorPasajeroYAsiento(
+  async listarReservasActivasPorPasajeroYAsiento(
     pasajeroId: string,
     asientoId: string
-  ): Reserva[] {
+  ): Promise<Reserva[]> {
     return [...this.reservas.values()].filter(
       (r) =>
         r.pasajeroId === pasajeroId && r.asientoId === asientoId && r.estaActiva()
     );
   }
 
-  listarReservasPorPasajero(pasajeroId: string): Reserva[] {
+  async listarReservasPorPasajero(pasajeroId: string): Promise<Reserva[]> {
     return [...this.reservas.values()].filter((r) => r.pasajeroId === pasajeroId);
   }
 
-  guardarVuelo(vuelo: Vuelo): void {
+  async guardarVuelo(vuelo: Vuelo): Promise<void> {
     this.vuelos.set(vuelo.id, vuelo);
   }
 
-  guardarPasajero(pasajero: Pasajero): void {
+  async guardarPasajero(pasajero: Pasajero): Promise<void> {
     this.pasajeros.set(pasajero.id, pasajero);
   }
 
-  guardarReserva(reserva: Reserva): void {
+  async guardarReserva(reserva: Reserva): Promise<void> {
     this.reservas.set(reserva.id, reserva);
   }
 
-  actualizarReserva(reserva: Reserva): void {
+  async actualizarReserva(reserva: Reserva): Promise<void> {
     this.reservas.set(reserva.id, reserva);
   }
 }

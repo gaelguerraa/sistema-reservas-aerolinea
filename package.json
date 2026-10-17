@@ -1,15 +1,35 @@
 {
   "name": "aerolinea-dominio",
   "version": "1.0.0",
-  "description": "Componente de dominio (feat-dominio) del Sistema de Reservas de Aerolínea",
+  "description": "Sistema de Reservas de Aerolínea: dominio y persistencia",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "tsx watch src/servidor.ts",
+    "start": "tsx src/servidor.ts",
     "escenarios": "ts-node src/escenarios.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "prisma:generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset",
+    "seed": "prisma db seed"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.14.10",
+    "express": "^5.3.0",
+    "prisma": "^7.10.0",
     "ts-node": "^10.9.2",
-    "@types/node": "^20.14.10"
+    "tsx": "^4.23.15",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "zod": "^4.6.7"
   }
 }
