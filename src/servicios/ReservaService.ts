@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { EstadoReserva } from "../entities/enums";
 import { Reserva } from "../entities/Reserva";
 import {
@@ -11,11 +12,7 @@ import {
 } from "../errores/erroresDeNegocio";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
 
-let contador = 0;
-function generarId(prefijo: string): string {
-  contador += 1;
-  return `${prefijo}-${Date.now()}-${contador}`;
-}
+function generarId(prefijo: string): string { return `${prefijo}-${randomUUID()}`; }
 
 /**
  * Servicio con las reglas de negocio del dominio de reservas. Recibe el
@@ -23,7 +20,7 @@ function generarId(prefijo: string): string {
  * por una implementación concreta.
  */
 export class ReservaService {
-  constructor(private readonly repositorio: IReservaRepositorio) {}
+  constructor(private readonly repositorio: IReservaRepositorio, private readonly dentroDeTransaccion = false) {}
 
   /** Asientos de un vuelo que aún no están ocupados por ninguna reserva activa. */
   async consultarDisponibilidad(vueloId: string): Promise<number> {
@@ -39,6 +36,8 @@ export class ReservaService {
     vueloId: string,
     asientoId: string
   ): Promise<Reserva> {
+    if (!this.dentroDeTransaccion)
+      return this.repositorio.ejecutarEnVuelo(vueloId, repo => new ReservaService(repo, true).crearReserva(pasajeroId, vueloId, asientoId));
     const vuelo = await this.repositorio.obtenerVuelo(vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", vueloId);
 
@@ -85,6 +84,9 @@ export class ReservaService {
   async confirmarReserva(reservaId: string): Promise<Reserva> {
     const reserva = await this.repositorio.obtenerReserva(reservaId);
     if (!reserva) throw new RecursoNoEncontradoError("Reserva", reservaId);
+    if (!this.dentroDeTransaccion)
+      return this.repositorio.ejecutarEnVuelo(reserva.vueloId, repo => new ReservaService(repo, true).confirmarReserva(reservaId));
+
 
     const vuelo = await this.repositorio.obtenerVuelo(reserva.vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", reserva.vueloId);
@@ -110,6 +112,9 @@ export class ReservaService {
   async cancelarReserva(reservaId: string): Promise<Reserva> {
     const reserva = await this.repositorio.obtenerReserva(reservaId);
     if (!reserva) throw new RecursoNoEncontradoError("Reserva", reservaId);
+    if (!this.dentroDeTransaccion)
+      return this.repositorio.ejecutarEnVuelo(reserva.vueloId, repo => new ReservaService(repo, true).cancelarReserva(reservaId));
+
 
     // Regla: no se puede cancelar una reserva que ya se encuentre en estado "completada".
     if (reserva.estado === EstadoReserva.COMPLETADA) {

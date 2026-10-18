@@ -13,6 +13,9 @@ import { Vuelo } from "../entities/Vuelo";
  * reglas de negocio son exactamente las mismas del avance 1.
  */
 export interface IReservaRepositorio {
+  // Ejecuta las reglas y la escritura como una operación indivisible por vuelo.
+  ejecutarEnVuelo<T>(vueloId: string, trabajo: (repo: IReservaRepositorio) => Promise<T>): Promise<T>;
+
   // --- Lectura ---
   obtenerVuelo(vueloId: string): Promise<Vuelo | undefined>;
   obtenerAsiento(asientoId: string): Promise<Asiento | undefined>;
@@ -28,7 +31,7 @@ export interface IReservaRepositorio {
   listarReservasPorPasajero(pasajeroId: string): Promise<Reserva[]>;
 
   // --- Escritura ---
-  guardarVuelo(vuelo: Vuelo): Promise<void>;
+  guardarVuelo(vuelo: Vuelo, soloNuevo?: boolean): Promise<void>;
   guardarPasajero(pasajero: Pasajero): Promise<void>;
   guardarReserva(reserva: Reserva): Promise<void>;
   actualizarReserva(reserva: Reserva): Promise<void>;

@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient, Prisma } from "../generated/prisma/client";
 import { Asiento } from "../entities/Asiento";
 import { Pasajero } from "../entities/Pasajero";
 import { Reserva } from "../entities/Reserva";
@@ -13,7 +13,16 @@ const ACTIVOS: EstadoReserva[] = [EstadoReserva.PENDIENTE, EstadoReserva.CONFIRM
  * Hace lo mismo que ReservaRepositorioEnMemoria; el dominio no se entera.
  */
 export class ReservaRepositorioPrisma implements IReservaRepositorio {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient | Prisma.TransactionClient) {}
+
+  async ejecutarEnVuelo<T>(vueloId: string, trabajo: (repo: IReservaRepositorio) => Promise<T>): Promise<T> {
+    if (!("$transaction" in this.prisma)) return trabajo(this);
+    return this.prisma.$transaction(async tx => {
+      // Las operaciones del mismo vuelo esperan su turno, incluso en procesos distintos.
+      await tx.$queryRaw`SELECT id FROM vuelos WHERE id = ${vueloId} FOR UPDATE`;
+      return trabajo(new ReservaRepositorioPrisma(tx));
+    }, { isolationLevel: "ReadCommitted", maxWait: 10000, timeout: 15000 });
+  }
 
   // ---------- Mapeos fila -> entidad de dominio ----------
   private aAsiento(r: { id: string; vueloId: string; numero: string; clase: string }): Asiento {
@@ -103,20 +112,22 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
   }
 
   // ---------- Escritura ----------
-  async guardarVuelo(vuelo: Vuelo): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+  async guardarVuelo(vuelo: Vuelo, soloNuevo = false): Promise<void> {
+    const guardar = async (tx: Prisma.TransactionClient) => {
       const datos = {
         origen: vuelo.origen,
         destino: vuelo.destino,
         fecha: vuelo.fecha,
         hora: vuelo.hora,
       };
-      await tx.vuelo.upsert({
+      if (soloNuevo) await tx.vuelo.create({ data: { id: vuelo.id, ...datos } });
+      else await tx.vuelo.upsert({
         where: { id: vuelo.id },
         create: { id: vuelo.id, ...datos },
         update: datos,
       });
 
+      await tx.asiento.deleteMany({ where: { vueloId: vuelo.id, id: { notIn: vuelo.asientos.map(a => a.id) } } });
       for (const a of vuelo.asientos) {
         await tx.asiento.upsert({
           where: { id: a.id },
@@ -124,7 +135,9 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
           update: { numero: a.numero, clase: a.clase },
         });
       }
-    });
+    };
+    if ("$transaction" in this.prisma) await this.prisma.$transaction(guardar);
+    else await guardar(this.prisma);
   }
 
   async guardarPasajero(pasajero: Pasajero): Promise<void> {
