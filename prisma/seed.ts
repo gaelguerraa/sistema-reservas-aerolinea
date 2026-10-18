@@ -2,77 +2,51 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { crearPrisma } from "../src/infraestructura/prisma/cliente";
 
-/**
- * Deja el sistema listo para probarse: 1 admin, 1 cliente, 2 vuelos, asientos,
- * pasajeros y reservas en distintos estados. Se puede ejecutar varias veces.
- */
+function password(variable: string) {
+  const value = process.env[variable] ?? "";
+  if (value.length < 8 || Buffer.byteLength(value) > 72 || value.includes("REEMPLAZAR"))
+    throw new Error(`Configura ${variable} con una contraseña propia de 8 a 72 bytes.`);
+  return value;
+}
 async function main() {
+  const adminPass = password("SEED_ADMIN_PASSWORD");
+  const clientPass = password("SEED_CLIENT_PASSWORD");
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@ejemplo.com";
+  const clientEmail = process.env.SEED_CLIENT_EMAIL ?? "cliente@ejemplo.com";
+  if (adminEmail === clientEmail) throw new Error("Admin y cliente necesitan correos diferentes.");
   const prisma = crearPrisma();
   try {
-    const adminEmail = process.env.SEED_ADMIN_EMAIL;
-    const adminPass = process.env.SEED_ADMIN_PASSWORD;
-    if (!adminEmail || !adminPass) {
-      throw new Error("Define SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD en el .env");
-    }
-
-    // Se borra en orden inverso a las llaves foráneas
-    await prisma.reserva.deleteMany();
-    await prisma.pasajero.deleteMany();
-    await prisma.asiento.deleteMany();
-    await prisma.vuelo.deleteMany();
-    await prisma.usuario.deleteMany();
-
-    await prisma.usuario.createMany({
-      data: [
-        { id: "usr-admin", email: adminEmail, passwordHash: await bcrypt.hash(adminPass, 10), rol: "ADMIN" },
-        { id: "usr-cliente", email: "cliente@ejemplo.com", passwordHash: await bcrypt.hash("Cliente123!", 10), rol: "CLIENTE" },
-      ],
-    });
-
-    await prisma.vuelo.createMany({
-      data: [
+    // La semilla agrega ejemplos que faltan. Nunca borra reservas ni usuarios existentes.
+    await prisma.$transaction(async tx => {
+      for (const v of [
         { id: "V100", origen: "Hermosillo", destino: "CDMX", fecha: new Date("2026-12-01T00:00:00Z"), hora: "08:00" },
-        { id: "V200", origen: "CDMX", destino: "Cancún", fecha: new Date("2026-12-15T00:00:00Z"), hora: "14:30" },
-      ],
-    });
-
-    await prisma.asiento.createMany({
-      data: [
-        { id: "V100-1A", vueloId: "V100", numero: "1A", clase: "EJECUTIVA" },
-        { id: "V100-12A", vueloId: "V100", numero: "12A", clase: "ECONOMICA" },
-        { id: "V100-12B", vueloId: "V100", numero: "12B", clase: "ECONOMICA" },
-        { id: "V100-12C", vueloId: "V100", numero: "12C", clase: "ECONOMICA" },
-        { id: "V200-1A", vueloId: "V200", numero: "1A", clase: "EJECUTIVA" },
-        { id: "V200-10A", vueloId: "V200", numero: "10A", clase: "ECONOMICA" },
-      ],
-    });
-
-    await prisma.pasajero.createMany({
-      data: [
-        { id: "P1", nombre: "Ana López", contacto: "ana@example.com" },
-        { id: "P2", nombre: "Luis Pérez", contacto: "luis@example.com" },
-        { id: "P3", nombre: "María Ruiz", contacto: "maria@example.com" },
-      ],
-    });
-
-    // Reservas en cada estado, para recorrer todos los casos de uso
-    const ahora = new Date();
-    await prisma.reserva.createMany({
-      data: [
-        { id: "res-seed-1", vueloId: "V100", asientoId: "V100-1A", pasajeroId: "P1", estado: "CONFIRMADA", fechaCreacion: ahora },
-        { id: "res-seed-2", vueloId: "V100", asientoId: "V100-12A", pasajeroId: "P2", estado: "PENDIENTE", fechaCreacion: ahora },
-        { id: "res-seed-3", vueloId: "V100", asientoId: "V100-12B", pasajeroId: "P3", estado: "CANCELADA", fechaCreacion: ahora },
-        { id: "res-seed-4", vueloId: "V200", asientoId: "V200-1A", pasajeroId: "P1", estado: "COMPLETADA", fechaCreacion: ahora },
-      ],
-    });
-
-    console.log("Seed completado");
-  } finally {
-    await prisma.$disconnect();
-  }
+        { id: "V200", origen: "CDMX", destino: "Cancún", fecha: new Date("2026-12-15T00:00:00Z"), hora: "14:30" }
+      ]) await tx.vuelo.upsert({ where: { id: v.id }, create: v, update: {} });
+      for (const [id, vueloId, numero, clase] of [
+        ["V100-1A", "V100", "1A", "EJECUTIVA"], ["V100-12A", "V100", "12A", "ECONOMICA"],
+        ["V100-12B", "V100", "12B", "ECONOMICA"], ["V100-12C", "V100", "12C", "ECONOMICA"],
+        ["V200-1A", "V200", "1A", "EJECUTIVA"], ["V200-10A", "V200", "10A", "ECONOMICA"]
+      ] as const) await tx.asiento.upsert({ where: { id }, create: { id, vueloId, numero, clase }, update: {} });
+      for (const [id, nombre, contacto] of [["P1", "Ana López", "ana@example.com"], ["P2", "Luis Pérez", clientEmail], ["P3", "María Ruiz", "maria@example.com"]])
+        await tx.pasajero.upsert({ where: { id }, create: { id, nombre, contacto }, update: {} });
+      // Un registro público no puede convertirse en admin por ejecutar la semilla.
+      for (const [id, email, pass, rol, pasajeroId] of [
+        ["usr-admin", adminEmail, adminPass, "ADMIN", null],
+        ["usr-cliente", clientEmail, clientPass, "CLIENTE", "P2"]
+      ] as const) {
+        const anterior = await tx.usuario.findUnique({ where: { email } });
+        if (anterior && (anterior.id !== id || anterior.rol !== rol))
+          throw new Error("Un correo de semilla ya pertenece a otra cuenta. Usa otro correo de práctica.");
+        await tx.usuario.upsert({ where: { id }, create: { id, email, passwordHash: await bcrypt.hash(pass, 12), rol, pasajeroId }, update: pasajeroId && !anterior?.pasajeroId ? { pasajeroId } : {} });
+      }
+      for (const [id, vueloId, asientoId, pasajeroId, estado] of [
+        ["res-seed-1", "V100", "V100-1A", "P1", "CONFIRMADA"],
+        ["res-seed-2", "V100", "V100-12A", "P2", "PENDIENTE"],
+        ["res-seed-3", "V100", "V100-12B", "P3", "CANCELADA"],
+        ["res-seed-4", "V200", "V200-1A", "P1", "COMPLETADA"]
+      ] as const) await tx.reserva.upsert({ where: { id }, create: { id, vueloId, asientoId, pasajeroId, estado, fechaCreacion: new Date() }, update: {} });
+    }, { timeout: 30000 });
+    console.log("Datos de práctica listos. Los registros existentes se conservaron.");
+  } finally { await prisma.$disconnect(); }
 }
-
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(e => { console.error(e.message); process.exitCode = 1; });

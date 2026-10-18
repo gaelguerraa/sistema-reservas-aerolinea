@@ -94,7 +94,7 @@ const asientoBody = z.strictObject({
 /** POST /vuelos */
 export const crearVueloBody = z
   .strictObject({
-    id: id("id"),
+    id: id("id").max(50, "El id del vuelo admite hasta 50 caracteres para construir los ids de sus asientos."),
     origen: texto("origen", 2, 80),
     destino: texto("destino", 2, 80),
     fecha: fechaISO("fecha"),
@@ -136,10 +136,10 @@ export const crearPasajeroBody = z.strictObject({
  * manda { "rol": "ADMIN" } recibe 400 (strictObject) y no puede subirse el rol.
  */
 export const registroBody = z.strictObject({
+  nombre: texto("nombre", 2, 120),
   email: email("email"),
   password: z
     .string({ error: "password es obligatorio y debe ser texto." })
-    .trim()
     .min(8, "password debe tener al menos 8 caracteres.")
     .refine((p) => p.trim().length > 0, "password no puede ir vacío.")
     .refine((p) => Buffer.byteLength(p, "utf8") <= 72, "password es demasiado largo (máximo 72 bytes).")
@@ -153,7 +153,6 @@ export const loginBody = z.strictObject({
   email: email("email"),
   password: z
     .string({ error: "password es obligatorio y debe ser texto." })
-    .trim()
     .min(1, "password no puede ir vacío.")
     .max(128, "password es demasiado largo."),
 });

@@ -1,31 +1,49 @@
 {
   "name": "aerolinea-dominio",
   "version": "1.0.0",
-  "description": "Sistema de Reservas de Aerolínea: dominio y persistencia",
+  "description": "Sistema de Reservas de Aerol\u00ednea: dominio y persistencia",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "tsx watch src/servidor.ts",
+    "start": "tsx src/servidor.ts",
     "escenarios": "ts-node src/escenarios.ts",
     "build": "tsc",
     "prisma:generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:reset": "prisma migrate reset",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "test": "tsx --test tests/*.test.ts",
+    "test:mysql": "tsx --test tests/mysql/*.test.ts",
+    "recorrido": "node scripts/recorrido.mjs",
+    "preparar": "node scripts/preparar-entorno.mjs"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^20.14.10",
-    "express": "^5.3.0",
     "prisma": "^7.10.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "@types/jsonwebtoken": "9.0.10",
+    "@types/swagger-ui-express": "4.1.8",
+    "supertest": "7.2.2",
+    "@types/supertest": "6.0.3"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "dotenv": "^18.0.7",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "express": "^5.3.0",
+    "jsonwebtoken": "9.0.3",
+    "swagger-ui-express": "5.0.1",
+    "express-rate-limit": "8.2.1"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }

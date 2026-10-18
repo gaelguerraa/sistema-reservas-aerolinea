@@ -4,74 +4,61 @@ import { Reserva } from "../entities/Reserva";
 import { Vuelo } from "../entities/Vuelo";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
 
-/**
- * Guarda todo en Maps en memoria. Sirve para probar el dominio sin base de
- * datos. Cumple el mismo contrato (asíncrono) que la implementación con Prisma.
- */
 export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   private vuelos = new Map<string, Vuelo>();
   private pasajeros = new Map<string, Pasajero>();
   private reservas = new Map<string, Reserva>();
-
-  async obtenerVuelo(vueloId: string): Promise<Vuelo | undefined> {
-    return this.vuelos.get(vueloId);
+  private turno: Promise<void> = Promise.resolve();
+  private copiarReserva(r: Reserva) {
+    return new Reserva(r.id, r.vueloId, r.asientoId, r.pasajeroId, r.estado, new Date(r.fechaCreacion));
   }
-
-  async obtenerAsiento(asientoId: string): Promise<Asiento | undefined> {
-    for (const vuelo of this.vuelos.values()) {
-      const asiento = vuelo.asientos.find((a) => a.id === asientoId);
-      if (asiento) return asiento;
+  private copiarVuelo(v: Vuelo) {
+    return new Vuelo(v.id, v.origen, v.destino, new Date(v.fecha), v.hora,
+      v.asientos.map(a => new Asiento(a.id, a.vueloId, a.numero, a.clase)));
+  }
+  async ejecutarEnVuelo<T>(_vueloId: string, trabajo: (repo: IReservaRepositorio) => Promise<T>): Promise<T> {
+    const anterior = this.turno;
+    let liberar!: () => void;
+    this.turno = new Promise<void>(resolve => { liberar = resolve; });
+    await anterior;
+    const vuelos = new Map(this.vuelos), reservas = new Map(this.reservas), pasajeros = new Map(this.pasajeros);
+    try { return await trabajo(this); }
+    catch (e) { this.vuelos = vuelos; this.reservas = reservas; this.pasajeros = pasajeros; throw e; }
+    finally { liberar(); }
+  }
+  async obtenerVuelo(id: string) { const v = this.vuelos.get(id); return v ? this.copiarVuelo(v) : undefined; }
+  async obtenerAsiento(id: string) {
+    for (const v of this.vuelos.values()) {
+      const a = v.asientos.find(a => a.id === id);
+      if (a) return new Asiento(a.id, a.vueloId, a.numero, a.clase);
     }
     return undefined;
   }
-
-  async obtenerPasajero(pasajeroId: string): Promise<Pasajero | undefined> {
-    return this.pasajeros.get(pasajeroId);
+  async obtenerPasajero(id: string) {
+    const p = this.pasajeros.get(id); return p ? new Pasajero(p.id, p.nombre, p.contacto) : undefined;
   }
-
-  async obtenerReserva(reservaId: string): Promise<Reserva | undefined> {
-    return this.reservas.get(reservaId);
+  async obtenerReserva(id: string) { const x = this.reservas.get(id); return x ? this.copiarReserva(x) : undefined; }
+  private filtrar(filtro: (r: Reserva) => boolean) { return [...this.reservas.values()].filter(filtro).map(x => this.copiarReserva(x)); }
+  async listarReservasActivasPorVuelo(id: string) { return this.filtrar(r => r.vueloId === id && r.estaActiva()); }
+  async listarReservasActivasPorAsiento(id: string) { return this.filtrar(r => r.asientoId === id && r.estaActiva()); }
+  async listarReservasActivasPorPasajeroYAsiento(p: string, a: string) { return this.filtrar(r => r.pasajeroId === p && r.asientoId === a && r.estaActiva()); }
+  async listarReservasPorPasajero(id: string) { return this.filtrar(r => r.pasajeroId === id).sort((a,b) => +a.fechaCreacion - +b.fechaCreacion); }
+  async guardarVuelo(v: Vuelo, soloNuevo = false) {
+    if (soloNuevo && this.vuelos.has(v.id)) throw Object.assign(new Error("Vuelo duplicado."), { code: "P2002" });
+    // Igual que MySQL: un asiento con historial no puede desaparecer del catálogo.
+    const viejo = this.vuelos.get(v.id);
+    for (const a of viejo?.asientos ?? []) {
+      if (!v.asientos.some(n => n.id === a.id) && [...this.reservas.values()].some(x => x.asientoId === a.id))
+        throw Object.assign(new Error("El asiento tiene reservas relacionadas."), { code: "P2003" });
+    }
+    this.vuelos.set(v.id, this.copiarVuelo(v));
   }
-
-  async listarReservasActivasPorVuelo(vueloId: string): Promise<Reserva[]> {
-    return [...this.reservas.values()].filter(
-      (r) => r.vueloId === vueloId && r.estaActiva()
-    );
-  }
-
-  async listarReservasActivasPorAsiento(asientoId: string): Promise<Reserva[]> {
-    return [...this.reservas.values()].filter(
-      (r) => r.asientoId === asientoId && r.estaActiva()
-    );
-  }
-
-  async listarReservasActivasPorPasajeroYAsiento(
-    pasajeroId: string,
-    asientoId: string
-  ): Promise<Reserva[]> {
-    return [...this.reservas.values()].filter(
-      (r) =>
-        r.pasajeroId === pasajeroId && r.asientoId === asientoId && r.estaActiva()
-    );
-  }
-
-  async listarReservasPorPasajero(pasajeroId: string): Promise<Reserva[]> {
-    return [...this.reservas.values()].filter((r) => r.pasajeroId === pasajeroId);
-  }
-
-  async guardarVuelo(vuelo: Vuelo): Promise<void> {
-    this.vuelos.set(vuelo.id, vuelo);
-  }
-
-  async guardarPasajero(pasajero: Pasajero): Promise<void> {
-    this.pasajeros.set(pasajero.id, pasajero);
-  }
-
-  async guardarReserva(reserva: Reserva): Promise<void> {
-    this.reservas.set(reserva.id, reserva);
-  }
-
-  async actualizarReserva(reserva: Reserva): Promise<void> {
-    this.reservas.set(reserva.id, reserva);
+  async guardarPasajero(p: Pasajero) { this.pasajeros.set(p.id, new Pasajero(p.id, p.nombre, p.contacto)); }
+  async guardarReserva(x: Reserva) { this.reservas.set(x.id, this.copiarReserva(x)); }
+  async actualizarReserva(x: Reserva) {
+    const anterior = this.reservas.get(x.id);
+    if (!anterior) throw Object.assign(new Error("Reserva inexistente."), { code: "P2025" });
+    const copia = this.copiarReserva(anterior); copia.estado = x.estado;
+    this.reservas.set(x.id, copia);
   }
 }

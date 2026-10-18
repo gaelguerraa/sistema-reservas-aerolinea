@@ -50,3 +50,7 @@ export class TransicionInvalidaError extends DomainError {
     super(`La reserva ${reservaId} no puede pasar de ${desde} a ${hacia}.`);
   }
 }
+
+export class VueloDuplicadoError extends DomainError {
+  constructor(id: string) { super(`Ya existe un vuelo con id ${id}.`); }
+}
