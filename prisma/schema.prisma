@@ -50,6 +50,7 @@ model Asiento {
 }
 
 model Pasajero {
+  usuario Usuario?
   id       String    @id @db.VarChar(64)
   nombre   String    @db.VarChar(120)
   contacto String    @db.VarChar(120)
@@ -81,6 +82,9 @@ model Usuario {
   passwordHash String   @map("password_hash") @db.VarChar(255)
   rol          Rol      @default(CLIENTE)
   creadoEn     DateTime @default(now()) @map("creado_en")
+  activo       Boolean @default(true)
+  pasajeroId   String? @unique @map("pasajero_id") @db.VarChar(64)
+  pasajero     Pasajero? @relation(fields: [pasajeroId], references: [id], onDelete: Restrict)
 
   @@map("usuarios")
 }
