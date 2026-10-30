@@ -18,6 +18,11 @@ export function crearControladorVuelos(reservas: ReservaService, catalogo: Catal
       enviarCreado(res, vueloAJson(vuelo), `/vuelos/${vuelo.id}`);
     },
 
+    async listar(_req: Request, res: Response) {
+      const vuelos = await catalogo.listarVuelos();
+      enviarOk(res, vuelos.map(({ id, origen, destino, fecha, hora, capacidadTotal }) => ({ id, origen, destino, fecha, hora, capacidadTotal })));
+    },
+
     async obtener(req: Request, res: Response) {
       const { id } = parametros<ParamsId>(req, res);
       enviarOk(res, vueloAJson(await catalogo.obtenerVuelo(id)));

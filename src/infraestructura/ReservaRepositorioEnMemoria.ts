@@ -27,6 +27,7 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
     finally { liberar(); }
   }
   async obtenerVuelo(id: string) { const v = this.vuelos.get(id); return v ? this.copiarVuelo(v) : undefined; }
+  async listarVuelos() { return [...this.vuelos.values()].map(v => this.copiarVuelo(v)); }
   async obtenerAsiento(id: string) {
     for (const v of this.vuelos.values()) {
       const a = v.asientos.find(a => a.id === id);

@@ -18,6 +18,7 @@ export interface IReservaRepositorio {
 
   // --- Lectura ---
   obtenerVuelo(vueloId: string): Promise<Vuelo | undefined>;
+  listarVuelos(): Promise<Vuelo[]>;
   obtenerAsiento(asientoId: string): Promise<Asiento | undefined>;
   obtenerPasajero(pasajeroId: string): Promise<Pasajero | undefined>;
   obtenerReserva(reservaId: string): Promise<Reserva | undefined>;

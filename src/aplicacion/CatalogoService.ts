@@ -44,6 +44,10 @@ export class CatalogoService {
     private readonly reservas: ReservaService
   ) {}
 
+    async listarVuelos(): Promise<Vuelo[]> {
+    return this.repositorio.listarVuelos();
+  }
+  
   // ---------- Vuelos y asientos ----------
   async obtenerVuelo(vueloId: string): Promise<Vuelo> {
     const vuelo = await this.repositorio.obtenerVuelo(vueloId);

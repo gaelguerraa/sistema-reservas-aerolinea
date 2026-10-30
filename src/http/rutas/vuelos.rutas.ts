@@ -15,6 +15,7 @@ export function rutasVuelos(ctrl: ControladorVuelos, seguridad: Seguridad): Rout
     validar({ body: crearVueloBody }),
     ctrl.registrar
   );
+  rutas.get("/", ctrl.listar);
   rutas.get("/:id", validar({ params: paramsId }), ctrl.obtener);
   rutas.get("/:id/disponibilidad", validar({ params: paramsId }), ctrl.disponibilidad);
   rutas.get("/:id/asientos", validar({ params: paramsId }), ctrl.asientos);

@@ -63,6 +63,16 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
       fila.asientos.map((a) => this.aAsiento(a))
     );
   }
+    async listarVuelos(): Promise<Vuelo[]> {
+    const filas = await this.prisma.vuelo.findMany({
+      include: { asientos: { orderBy: { numero: "asc" } } },
+      orderBy: [{ fecha: "asc" }, { hora: "asc" }],
+    });
+    return filas.map(
+      (fila) =>
+        new Vuelo(fila.id, fila.origen, fila.destino, fila.fecha, fila.hora, fila.asientos.map((a) => this.aAsiento(a)))
+    );
+  }
 
   async obtenerAsiento(asientoId: string): Promise<Asiento | undefined> {
     const fila = await this.prisma.asiento.findUnique({ where: { id: asientoId } });
