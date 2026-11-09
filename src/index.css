@@ -1,0 +1,7 @@
+:root { --navy: #1e3442; --orange: #d57a4d; --orange-dark: #b65e37; --muted: #687980; --line: #e5e9e6; --sans: Inter, "Segoe UI", Arial, sans-serif; font-family: var(--sans); color: #43545c; background: #fff; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-weight: 400; }
+* { box-sizing: border-box; }
+html { min-width: 320px; background: #fff; }
+body { min-width: 320px; min-height: 100vh; margin: 0; }
+button, input, select { font: inherit; }
+button { color: inherit; }
+::selection { background: #f2d4c0; color: var(--navy); }
