@@ -120,11 +120,32 @@ h1, h2, h3, p { margin-top: 0; }
 .availability-notice { margin: 12px 0 0; color: #91552e; font-size: 12px; }
 .reservation-bar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 18px; padding: 15px 17px; background: #f4f5f1; border: 1px solid #e2e6e2; }
 .selection-summary { display: flex; align-items: center; gap: 12px; }.selection-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #e9efea; color: #54816a; font-size: 18px; }.selection-summary small { margin-bottom: 2px; }.selection-summary strong { color: var(--navy); font-size: 12px; font-weight: 600; }
+.header-nav { display: flex; align-items: center; gap: 4px; }
+.header-actions { display: flex; align-items: center; gap: 14px; }
+.header-button { border: 1px solid #ccd4d4; border-radius: 3px; padding: 9px 12px; background: #fff; color: var(--navy); text-decoration: none; font-size: 12px; font-weight: 650; cursor: pointer; }
+.header-button:hover { border-color: var(--orange); color: var(--orange-dark); }
+.user-greeting { max-width: 180px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.session-notice { position: sticky; z-index: 5; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px clamp(20px, 6vw, 88px); background: #fff4e8; border-bottom: 1px solid #ebc8a9; color: #79401f; font-size: 13px; }
+.session-notice button { border: 0; background: transparent; color: inherit; font-size: 22px; cursor: pointer; }
+.auth-page { display: grid; place-items: center; min-height: 65vh; padding-top: 40px; padding-bottom: 40px; }
+.auth-card { width: min(440px, 100%); padding: 34px; border: 1px solid var(--line); border-radius: 5px; background: #fff; box-shadow: 0 16px 45px rgba(31,49,59,.06); }
+.auth-card h1, .reservation-placeholder h1 { margin: 12px 0 9px; color: var(--navy); font: 500 34px/1.1 Georgia,serif; }
+.auth-card > p, .reservation-placeholder p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.auth-form { display: flex; flex-direction: column; gap: 9px; margin-top: 25px; }
+.auth-form label { margin-top: 7px; color: #53656c; font-size: 11px; font-weight: 700; }
+.auth-form input { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #dce1e1; border-radius: 3px; outline: none; }
+.auth-form input:focus-visible { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(202,103,55,.15); }
+.auth-submit { width: 100%; margin-top: 12px; }
+.form-error { margin: 4px 0 0; color: #a34c43; font-size: 12px; }
+.reservation-placeholder { min-height: 55vh; padding-top: 72px; padding-bottom: 72px; }
+.reservation-placeholder .button { margin-top: 12px; }
+.site-header nav a.active { color: var(--orange-dark); }
 @media (max-width: 900px) { .flight-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.hero-art { right: -120px; opacity: .7; }.hero-copy { max-width: 520px; }.stats-grid { grid-template-columns: repeat(3,1fr); }.class-stat { grid-column: 1/-1; min-height: 60px; flex-direction: row; justify-content: space-around; } }
 @media (max-width: 600px) {
-  .site-header { height: 64px; padding: 0 18px; }.brand { font-size: 11px; }.brand-mark { width: 30px; height: 30px; }.site-header nav a { padding: 10px 8px; }.header-note { display: none; }
+  .site-header { min-height: 64px; height: auto; padding: 10px 14px; gap: 8px; flex-wrap: wrap; }.brand { font-size: 11px; }.brand-mark { width: 30px; height: 30px; }.site-header nav a { padding: 10px 8px; }.header-note { display: none; }.header-nav { margin-left: auto; }.header-actions { gap: 7px; }.header-button { padding: 8px; font-size: 10px; }.user-greeting { display: none; }
   .page-content { width: calc(100% - 36px); }.catalog-hero { min-height: 320px; align-items: flex-start; }.hero-copy { padding-top: 46px; }.hero-copy h1 { font-size: clamp(42px,12vw,58px); }.hero-copy p { max-width: 290px; font-size: 13px; }.hero-art { width: 230px; height: 170px; right: -95px; top: 132px; opacity: .45; }.sun-disc { width: 95px; height: 95px; right: 48px; top: 22px; }.orbit-one,.orbit-two { width: 290px; height: 110px; right: -52px; top: 53px; }.plane-mark { right: 100px; top: 48px; font-size: 17px; }.hero-coordinate { right: 18px; bottom: 13px; font-size: 7px; }.hero-bottom { bottom: 12px; }
   .catalog-section { padding: 36px 0 30px; }.section-heading { align-items: flex-start; }.section-heading h2 { font-size: 25px; }.catalog-note { max-width: 100px; text-align: right; font-size: 10px; }.filter-panel { flex-direction: column; align-items: stretch; gap: 12px; padding: 13px; }.filter-panel label { width: 100%; }.clear-filters { align-self: flex-start; }.flight-grid { grid-template-columns: 1fr; gap: 11px; }.flight-card { padding-top: 15px; }.flight-route { margin: 15px 0 12px; }.catalog-callout { align-items: flex-start; flex-wrap: wrap; margin-bottom: 35px; padding: 15px; }.callout-icon { margin-top: -2px; }.catalog-callout p { flex-basis: calc(100% - 40px); }.callout-caption { margin-left: 34px; font-size: 8px; }.site-footer { padding: 16px 18px; font-size: 9px; }
   .detail-hero { padding: 20px 17px 22px; }.detail-route { grid-template-columns: 1fr 40px 1fr; gap: 8px; padding: 27px 0 22px; }.detail-route h1 { font-size: clamp(20px,6vw,30px); overflow-wrap: anywhere; }.detail-meta { gap: 25px; }.availability-section { padding: 34px 0 42px; }.availability-heading { align-items: flex-start; flex-direction: column; }.availability-heading h2 { font-size: 24px; }.refresh-button { width: 100%; }.stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }.class-stat { grid-column: auto; min-height: 85px; flex-direction: column; align-items: stretch; }.seat-tools { align-items: flex-start; flex-direction: column; }.seat-legend { gap: 11px; }.seat-class { padding: 15px 11px 17px; }.seat-map-scroll { margin-right: -11px; padding-right: 11px; }.seat-row { gap: 7px; }.seat { width: 44px; height: 44px; flex-basis: 44px; }.seat-group { gap: 5px; }.reservation-bar { align-items: stretch; flex-direction: column; padding: 13px; }.reservation-bar .button { width: 100%; }.not-found { padding: 70px 0; }.not-found h1 { font-size: 32px; }
+  .auth-card { padding: 25px 20px; }.header-nav a { font-size: 11px !important; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

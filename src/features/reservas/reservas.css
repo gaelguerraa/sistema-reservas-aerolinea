@@ -1,0 +1,119 @@
+/* Feature de reservaciones (P4). Usa los tokens de index.css y los botones de App.css. */
+
+/* ---- Insignias de estado ---- */
+.estado-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; font-size: 10px; line-height: 1; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.estado-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.estado-pendiente { background: #fff4e0; color: #85540f; }
+.estado-confirmada { background: #e6f2eb; color: #2c6649; }
+.estado-cancelada { background: #f6e8e6; color: #983d33; }
+.estado-completada { background: #e7edf2; color: #2c4a5e; }
+
+/* ---- Botones de la feature ---- */
+.button-danger { border: 1px solid #9a3f35; background: #9a3f35; color: #fff; }
+.button-danger:hover:not(:disabled) { background: #82342b; }
+.button-danger-outline { border: 1px solid #e2c3be; background: #fff; color: #983d33; }
+.button-danger-outline:hover:not(:disabled) { background: #fbf2f1; border-color: #c98f86; }
+.button-danger:focus-visible, .button-danger-outline:focus-visible { outline: 3px solid rgba(154,63,53,.4); outline-offset: 3px; }
+
+/* ---- Avisos ---- */
+.reserva-aviso { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 20px; padding: 13px 15px; border: 1px solid; border-radius: 4px; font-size: 13px; line-height: 1.5; }
+.reserva-aviso > span { width: 22px; height: 22px; flex: 0 0 22px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 800; }
+.reserva-aviso p { flex: 1; margin: 1px 0 0; }
+.reserva-aviso button { border: 0; background: transparent; color: inherit; font-size: 20px; line-height: 1; cursor: pointer; padding: 0 2px; }
+.reserva-aviso-exito { border-color: #b9d8c6; background: #f1f8f3; color: #2c5c44; }
+.reserva-aviso-exito > span { background: #4f8c73; }
+.reserva-aviso-error { border-color: #e6c3be; background: #fdf3f2; color: #8a352c; }
+.reserva-aviso-error > span { background: #a34c43; }
+
+/* ---- Datos en pares (etiqueta / valor) ---- */
+.reserva-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.reserva-datos dt { margin-bottom: 4px; color: #64747a; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.reserva-datos dd { margin: 0; color: var(--navy); font-size: 13px; overflow-wrap: anywhere; }
+
+/* ---- Mis reservaciones ---- */
+.reservas-page { padding: 40px 0 60px; }
+.reservas-heading { margin-bottom: 26px; }
+.reservas-heading h1 { margin: 10px 0 6px; color: var(--navy); font: 500 clamp(30px, 4vw, 40px)/1.1 Georgia, serif; letter-spacing: -.03em; }
+.reservas-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.reservas-section + .reservas-section { margin-top: 38px; }
+.reservas-section h2 { margin: 0 0 14px; color: var(--navy); font: 500 22px Georgia, serif; }
+.reservas-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.reservas-vacio { margin: 0; padding: 18px; border: 1px dashed #d6dcda; border-radius: 4px; color: var(--muted); font-size: 13px; }
+.reservas-vacio a { color: var(--orange-dark); font-weight: 650; }
+.reserva-card { min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+.reserva-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.reserva-ruta { margin: 0; color: var(--navy); font: 500 19px/1.25 Georgia, serif; }
+.reserva-ruta span[aria-hidden] { color: var(--orange); font-family: var(--sans); }
+.reserva-card-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* ---- Detalle ---- */
+.reserva-detalle { padding-bottom: 60px; }
+.reserva-hero { padding: 24px clamp(20px, 4vw, 45px) 26px; border-radius: 4px; background: var(--navy); color: #fff; }
+.reserva-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.reserva-hero-top .eyebrow { color: #e3a276; overflow-wrap: anywhere; }
+.reserva-hero h1 { margin: 20px 0 22px; color: #fff; font: 500 clamp(24px, 4vw, 36px)/1.15 Georgia, serif; letter-spacing: -.03em; }
+.reserva-hero h1 span[aria-hidden] { color: #f0b28a; font-family: var(--sans); }
+.reserva-hero-meta { display: flex; flex-wrap: wrap; gap: 18px 46px; margin: 0; padding-top: 16px; border-top: 1px solid #3c505d; }
+.reserva-hero-meta dt { margin-bottom: 5px; color: #9fb0b3; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.reserva-hero-meta dd { margin: 0; color: #f5f4ef; font-size: 13px; }
+.reserva-info { margin-top: 26px; padding: 22px; border: 1px solid var(--line); border-radius: 5px; }
+.reserva-info h2 { margin: 0 0 16px; color: var(--navy); font: 500 21px Georgia, serif; }
+.reserva-datos-detalle { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.reserva-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.reserva-nota { flex: 1; margin: 0; color: var(--muted); font-size: 13px; }
+
+/* ---- Formulario de reservar ---- */
+.reservar-page { padding-bottom: 60px; }
+.reservar-form { width: min(680px, 100%); display: flex; flex-direction: column; gap: 18px; padding: 30px; border: 1px solid var(--line); border-radius: 5px; background: #fff; box-shadow: 0 16px 45px rgba(31,49,59,.05); }
+.reservar-form h1 { margin: -6px 0 0; color: var(--navy); font: 500 clamp(28px, 4vw, 36px)/1.1 Georgia, serif; letter-spacing: -.03em; }
+.reservar-intro { margin: -8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.reservar-form .notice { margin: 0; }
+.form-alert { padding: 12px 14px; border: 1px solid #e6c3be; border-radius: 4px; background: #fdf3f2; color: #8a352c; font-size: 13px; line-height: 1.5; }
+.reservar-fieldset { min-width: 0; margin: 0; padding: 16px 18px 18px; border: 1px solid var(--line); border-radius: 4px; }
+.reservar-fieldset legend { padding: 0 6px; margin-left: -6px; color: var(--navy); font-size: 12px; font-weight: 750; }
+.reservar-vuelo { display: grid; gap: 10px; }
+.reservar-vuelo .flight-number { justify-self: start; }
+.reservar-ruta { margin: 0; color: var(--navy); font: 500 20px/1.25 Georgia, serif; }
+.reservar-ruta span[aria-hidden] { color: var(--orange); font-family: var(--sans); }
+.reservar-vuelo .reserva-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.field-label { display: block; margin-bottom: 7px; color: #53656c; font-size: 11px; font-weight: 700; }
+.field-input { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #dce1e1; border-radius: 3px; background: #fff; color: var(--navy); font-size: 13px; outline: none; }
+.field-input:focus-visible { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(202,103,55,.15); }
+.field-input[aria-invalid='true'] { border-color: #a34c43; }
+.field-help { margin: 8px 0 0; color: #6f7f84; font-size: 12px; }
+.field-error { margin: 8px 0 0; color: #a34c43; font-size: 12px; font-weight: 600; }
+.contacto-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px 14px; border-radius: 3px; background: #f7f7f5; }
+.checkbox-field { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; color: var(--navy); font-size: 13px; cursor: pointer; }
+.checkbox-field input { width: 18px; height: 18px; flex: 0 0 18px; margin: 0; accent-color: var(--orange-dark); }
+.checkbox-field input[aria-invalid='true'] { outline: 2px solid #a34c43; outline-offset: 2px; }
+.reservar-submit { align-self: flex-start; min-width: 220px; }
+
+/* ---- Diálogo de confirmación ---- */
+.dialog-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(20,34,43,.55); }
+.dialog-card { width: min(460px, 100%); padding: 26px; border-radius: 6px; background: #fff; box-shadow: 0 24px 60px rgba(15,28,36,.3); }
+.dialog-card h2 { margin: 0 0 10px; color: var(--navy); font: 500 23px/1.2 Georgia, serif; }
+.dialog-message p { margin: 0; color: #4e5d66; font-size: 13px; line-height: 1.6; }
+.dialog-message strong { color: var(--navy); }
+.dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+
+@media (max-width: 900px) {
+  .reserva-datos-detalle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .reservas-page { padding: 28px 0 44px; }
+  .reservas-grid { grid-template-columns: 1fr; gap: 11px; }
+  .reserva-card { padding: 15px; }
+  .reserva-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reserva-card-actions .button { flex: 1 1 auto; }
+  .reserva-hero { padding: 20px 17px 22px; }
+  .reserva-hero-meta { gap: 14px 28px; }
+  .reserva-info { padding: 17px; }
+  .reserva-acciones .button { width: 100%; }
+  .reservar-form { padding: 20px 16px; }
+  .reservar-fieldset { padding: 14px 13px 15px; }
+  .contacto-datos, .reservar-vuelo .reserva-datos { grid-template-columns: 1fr; }
+  .reservar-submit { width: 100%; min-width: 0; }
+  .dialog-card { padding: 20px 18px; }
+  .dialog-actions .button { width: 100%; }
+}
