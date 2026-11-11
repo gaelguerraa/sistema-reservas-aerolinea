@@ -1,7 +1,9 @@
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthProvider'
-import { useAuth } from './features/auth/useAuth'
 import { LoginPage } from './features/auth/pages/LoginPage'
+import { MisReservasPage } from './features/reservas/pages/MisReservasPage'
+import { ReservaDetallePage } from './features/reservas/pages/ReservaDetallePage'
+import { ReservarPage } from './features/reservas/pages/ReservarPage'
 import { VuelosListPage } from './features/vuelos/pages/VuelosListPage'
 import { VueloDetallePage } from './features/vuelos/pages/VueloDetallePage'
 import { Footer } from './shared/layout/Footer'
@@ -17,19 +19,6 @@ function NotFoundPage() {
       <h1>No encontramos esta página</h1>
       <p>Revisa la dirección o vuelve a explorar los vuelos disponibles.</p>
       <Link className="button button-primary" to="/vuelos">Volver al inicio</Link>
-    </main>
-  )
-}
-
-function ReservationPlaceholder() {
-  const { user } = useAuth()
-
-  return (
-    <main className="page-content reservation-placeholder">
-      <span className="eyebrow">TU CUENTA</span>
-      <h1>Reservaciones</h1>
-      <p>Sesión iniciada como {user?.email}. Esta pantalla se integrará con el flujo de reservaciones.</p>
-      <Link className="button button-secondary" to="/vuelos">Explorar vuelos</Link>
     </main>
   )
 }
@@ -56,8 +45,9 @@ export default function App() {
             <Route path="/vuelos/:id" element={<VueloDetallePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/reservas" element={<ReservationPlaceholder />} />
-              <Route path="/reservar" element={<ReservationPlaceholder />} />
+              <Route path="/reservas" element={<MisReservasPage />} />
+              <Route path="/reservas/:id" element={<ReservaDetallePage />} />
+              <Route path="/reservar" element={<ReservarPage />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>
