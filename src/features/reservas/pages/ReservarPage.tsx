@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../../shared/http/client'
 import { useAuth } from '../../auth/useAuth'
 import { AsyncState } from '../../vuelos/components/AsyncState'
-import { classLabel } from '../../vuelos/mocks'
+import { classLabel } from '../../vuelos/utils'
 import type { Asiento, VueloDetalle } from '../../vuelos/types'
 import { formatFechaLarga, formatHora, isPasada } from '../../vuelos/utils'
 import { getApiErrorStatus, isAbortError, vuelosApi } from '../../vuelos/vuelosApi'
@@ -15,7 +15,7 @@ import '../reservas.css'
 interface DatosReserva {
   vuelo: VueloDetalle
   asientos: Asiento[]
-  /** null si el servicio no encuentra el perfil de pasajero. */
+
   pasajero: Pasajero | null
 }
 
@@ -89,6 +89,10 @@ export function ReservarPage() {
   const { vuelo, pasajero } = datos
   const pasado = isPasada(vuelo.fecha, vuelo.hora)
 
+  if (!libres.length) {
+    return <main className="page-content"><AsyncState kind="empty" title="No quedan asientos disponibles" message={errores.asiento ?? "Este vuelo no tiene asientos libres para reservar. Puedes elegir otra ruta."} action={<Link className="button button-primary" to="/vuelos">Explorar otros vuelos</Link>} /></main>
+  }
+
   function elegirAsiento(id: string) {
     const next = new URLSearchParams(searchParams)
     if (id) next.set('asientoId', id)
@@ -100,10 +104,8 @@ export function ReservarPage() {
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (enviando || !pasajeroId) return
+    if (enviando || !pasajeroId || !pasajero || pasado) return
     setErrorGeneral('')
-
-    // Validación antes de enviar: un mensaje junto a cada campo.
     const asiento = seleccionado
     const nuevos: Errores = {}
     if (!asiento) nuevos.asiento = asientoYaNoDisponible ? 'El asiento que elegiste ya no está disponible. Elige otro asiento libre.' : 'Elige un asiento libre para continuar.'
@@ -122,7 +124,6 @@ export function ReservarPage() {
       const apiError = reason instanceof ApiError ? reason : null
       if (apiError?.kind === 'NO_AUTENTICADO') return
       if (apiError?.code === 'ASIENTO_OCUPADO') {
-        // Alguien lo ganó: se quita de la lista, se pide otro y se actualizan los libres.
         setOcupadosRecientes((actuales) => [...actuales, asiento.id])
         elegirAsiento('')
         setErrores({ asiento: apiError.userMessage })
