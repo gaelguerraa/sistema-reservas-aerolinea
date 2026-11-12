@@ -52,3 +52,7 @@ export function agruparAsientos(asientos: Asiento[]): Array<{ clase: Asiento['cl
     return { clase, filas: [...filas.entries()].sort(([a], [b]) => Number(a) - Number(b)).map(([fila, rowSeats]) => ({ fila, asientos: rowSeats })) }
   }).filter((group) => group.filas.length)
 }
+
+export function classLabel(clase: Asiento['clase']): string {
+  return clase === 'EJECUTIVA' ? 'Ejecutiva' : 'Económica'
+}
