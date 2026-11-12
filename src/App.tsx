@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { MisReservasPage } from './features/reservas/pages/MisReservasPage'
@@ -10,6 +10,7 @@ import { Footer } from './shared/layout/Footer'
 import { Header } from './shared/layout/Header'
 import { SessionNotice } from './shared/layout/SessionNotice'
 import { ProtectedRoute } from './shared/routing/ProtectedRoute'
+import { useAuth } from './features/auth/useAuth'
 import './App.css'
 
 function NotFoundPage() {
@@ -24,11 +25,14 @@ function NotFoundPage() {
 }
 
 function AppLayout() {
+  const location = useLocation()
+  const { user } = useAuth()
+  const key = `${user?.id ?? "publico"}:${location.pathname}:${location.pathname === "/reservar" ? new URLSearchParams(location.search).get("vueloId") : ""}`
   return (
     <div className="app-shell">
       <Header />
       <SessionNotice />
-      <Outlet />
+      <Outlet key={key} />
       <Footer />
     </div>
   )
