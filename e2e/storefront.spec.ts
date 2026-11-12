@@ -1,0 +1,72 @@
+import { expect, test, type Page } from '@playwright/test'
+
+async function login(page: Page, email = 'cliente@ejemplo.com') {
+  await page.getByLabel('Correo electrónico').fill(email)
+  await page.getByLabel('Contraseña', { exact: true }).fill('Cliente123')
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+}
+
+test('conserva el destino, reserva, cancela y libera el asiento sin recargar', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/reservar?vueloId=V100&asientoId=V100-1A')
+  await expect(page).toHaveURL(/\/login\?redirect=/)
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+  await expect(page.getByText('Escribe tu correo electrónico.')).toBeVisible()
+  await login(page)
+  await expect(page.getByRole('heading', { name: 'Confirma tu reservación' })).toBeVisible()
+  await page.getByLabel('Confirmo que mis datos de contacto son correctos').check()
+  await page.getByRole('button', { name: 'Confirmar reservación', exact: true }).click()
+  await expect(page).toHaveURL(/\/reservas\/res-/)
+  await expect(page.getByRole('heading', { name: 'Datos de la reservación' })).toBeVisible()
+  await page.evaluate(() => Reflect.set(window, 'spaCheck', 'sin-recarga'))
+  await page.getByRole('button', { name: 'Cancelar reservación', exact: true }).click()
+  await page.getByRole('button', { name: 'Sí, cancelar reservación', exact: true }).click()
+  await expect(page.getByText('Cancelada', { exact: true }).first()).toBeVisible()
+  await page.getByRole('link', { name: 'Ver el vuelo', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Asiento 1A, ejecutiva, libre', exact: true })).toBeEnabled()
+  expect(await page.evaluate(() => Reflect.get(window, 'spaCheck'))).toBe('sin-recarga')
+  expect(errors).toEqual([])
+})
+
+test('muestra carga, información, vacío, error recuperable y 404', async ({ page }) => {
+  await page.goto('/vuelos')
+  await expect(page.getByRole('heading', { name: 'Preparando tus opciones' })).toBeVisible()
+  await expect(page.locator('.flight-card').first()).toBeVisible()
+  await page.goto('/vuelos?mockEmpty=1')
+  await expect(page.getByRole('heading', { name: 'Aún no hay vuelos programados' })).toBeVisible()
+  await page.goto('/vuelos?mockError=1')
+  await expect(page.getByRole('heading', { name: 'No pudimos cargar los vuelos' })).toBeVisible()
+  await page.evaluate(() => window.history.replaceState({}, '', '/vuelos'))
+  await page.getByRole('button', { name: 'Reintentar' }).click()
+  await expect(page.locator('.flight-card').first()).toBeVisible()
+  await page.goto('/vuelos/V600')
+  await expect(page.getByRole('heading', { name: 'Este vuelo no tiene asientos configurados' })).toBeVisible()
+  await page.goto('/ruta-inexistente')
+  await expect(page.getByRole('heading', { name: 'No encontramos esta página' })).toBeVisible()
+  await expect(page.locator('.site-header')).toBeVisible()
+  await expect(page.locator('footer')).toBeVisible()
+})
+
+test('la sesión vencida regresa al login y permite continuar después', async ({ page }) => {
+  await page.goto('/login?redirect=%2Freservas')
+  await login(page)
+  await expect(page.getByRole('heading', { name: 'Mis reservaciones', exact: true })).toBeVisible()
+  await page.goto('/reservas?mockExpired=1')
+  await expect(page).toHaveURL(/\/login\?redirect=/)
+  await expect(page.getByText('Tu sesión ha vencido. Inicia sesión nuevamente para continuar.')).toBeVisible()
+  await login(page)
+  await expect(page.getByRole('heading', { name: 'Mis reservaciones', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+  await page.goto('/reservas')
+  await expect(page).toHaveURL(/\/login\?redirect=/)
+})
+
+test('el cliente sin reservas ve una explicación y el diseño cabe en pantalla', async ({ page }) => {
+  await page.goto('/login?redirect=%2Freservas')
+  await login(page, 'sinreservas@ejemplo.com')
+  await expect(page.getByRole('heading', { name: 'Aún no tienes reservaciones' })).toBeVisible()
+  await page.getByRole('link', { name: 'Explorar vuelos', exact: true }).click()
+  await expect(page.locator('.flight-card').first()).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
