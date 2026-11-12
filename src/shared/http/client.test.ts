@@ -67,4 +67,40 @@ describe('cliente HTTP', () => {
     expect(error.kind).toBe('RED')
     expect(error.userMessage).toContain('No pudimos conectar')
   })
+
+  it('envía el token automáticamente y lo omite en login', async () => {
+    tokenStorage.set('credencial-prueba')
+    const headers: unknown[] = []
+    http.defaults.adapter = async (config) => {
+      headers.push(config.headers.get('Authorization'))
+      return { data: { ok: true, data: [] }, status: 200, statusText: '', headers: {}, config }
+    }
+    await api.get('/reservas')
+    await api.post('/auth/login', {}, { skipAuth: true })
+    expect(headers).toEqual(['Bearer credencial-prueba', undefined])
+  })
+
+  it('una respuesta tardía de la sesión anterior no cierra la nueva', async () => {
+    tokenStorage.set('sesion-anterior')
+    const handler = vi.fn()
+    const remove = setUnauthorizedHandler(handler)
+    http.defaults.adapter = async (config) => {
+      tokenStorage.set('sesion-nueva')
+      const response = { data: { ok: false, error: { codigo: 'NO_AUTENTICADO' } }, status: 401, statusText: '', headers: {}, config }
+      throw new AxiosError('fallo', 'ERR_BAD_REQUEST', config, null, response)
+    }
+    await api.get('/reservas').catch(() => undefined)
+    expect(tokenStorage.get()).toBe('sesion-nueva')
+    expect(handler).not.toHaveBeenCalled()
+    remove()
+  })
+
+  it('rechaza envolturas inválidas y oculta mensajes técnicos desconocidos', async () => {
+    responder(200, { vuelos: [] })
+    await expect(api.get('/vuelos')).rejects.toMatchObject({ code: 'RESPUESTA_INVALIDA' })
+    responder(409, { ok: false, error: { codigo: 'CODIGO_NUEVO', mensaje: 'Prisma SQL stacktrace interno' } })
+    const error = await api.post('/reservas', {}).catch((reason: unknown) => reason) as ApiError
+    expect(error.userMessage).not.toContain('Prisma')
+    expect(error.userMessage).toContain('Inténtalo de nuevo')
+  })
 })
