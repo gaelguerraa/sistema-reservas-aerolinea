@@ -1,4 +1,4 @@
-import { classLabel } from '../vuelos/mocks'
+import { classLabel } from '../vuelos/utils'
 import { formatHora, isPasada } from '../vuelos/utils'
 import type { EstadoReserva, ReservaConVuelo } from './types'
 
