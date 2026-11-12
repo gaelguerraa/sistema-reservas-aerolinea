@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AsyncState } from '../components/AsyncState'
-import { classLabel } from '../mocks'
+import { classLabel } from '../utils'
 import { getApiErrorStatus, isAbortError, vuelosApi } from '../vuelosApi'
 import type { Asiento, VueloDetalle } from '../types'
 import { agruparAsientos, buildReservarUrl, formatFechaLarga, formatHora, isPasada, parseNumeroAsiento } from '../utils'
 
-const validId = /^[A-Za-z0-9_-]{1,20}$/
+const validId = /^[A-Za-z0-9_-]{1,64}$/
 type ClassFilter = 'TODAS' | Asiento['clase']
 
 export function VueloDetallePage() {
@@ -36,7 +36,7 @@ export function VueloDetallePage() {
       setSeats(seatData)
     }).catch((reason: unknown) => {
       if (controller.signal.aborted || isAbortError(reason)) return
-      if (getApiErrorStatus(reason) === 404) navigate('/no-encontrado', { replace: true })
+      if ([400, 404].includes(getApiErrorStatus(reason) ?? 0)) navigate('/no-encontrado', { replace: true })
       else setError(true)
     }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
@@ -90,7 +90,7 @@ export function VueloDetallePage() {
 
   if (loading) return <main className="page-content"><AsyncState kind="loading" title="Cargando detalles del vuelo" message="Estamos consultando la ruta y sus asientos." /></main>
   if (error) return <main className="page-content"><AsyncState kind="error" title="No pudimos cargar este vuelo" message="No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo." retry={() => { setError(false); setLoading(true); setReload((value) => value + 1) }} /></main>
-  if (!flight) return null
+  if (!flight) return <main className="page-content"><AsyncState kind="empty" title="Este vuelo no está disponible" message="No recibimos información de este vuelo. Consulta otra ruta." action={<Link to="/vuelos">Explorar vuelos</Link>} /></main>
 
   return (
     <main className="page-content detail-page">
@@ -108,7 +108,7 @@ export function VueloDetallePage() {
         <div className="seat-tools"><div className="seat-legend" aria-label="Leyenda de asientos"><span><i className="legend-seat" /> Libre</span><span><i className="legend-seat legend-occupied">×</i> Ocupado</span><span><i className="legend-seat legend-selected">✓</i> Seleccionado</span></div><label className="class-select">Clase <select value={filter} onChange={(event) => setFilter(event.target.value as ClassFilter)}><option value="TODAS">Todas</option><option value="EJECUTIVA">Ejecutiva</option><option value="ECONOMICA">Económica</option></select></label></div>
         {notice && <p className="availability-notice" role="status">{notice}</p>}
 
-        {seats.length === 0 ? <AsyncState kind="empty" title="Este vuelo no tiene asientos configurados" message="No hay asientos para mostrar. Vuelve a consultar otros vuelos." action={<Link className="button button-secondary" to="/vuelos">Explorar otros vuelos</Link>} /> : available === 0 ? <AsyncState kind="empty" title="Este vuelo está lleno" message="Por ahora no quedan asientos disponibles en esta ruta." action={<Link className="button button-secondary" to="/vuelos">Ver otros vuelos</Link>} /> : (
+        {seats.length === 0 ? <AsyncState kind="empty" title="Este vuelo no tiene asientos configurados" message="No hay asientos para mostrar. Vuelve a consultar otros vuelos." action={<Link className="button button-secondary" to="/vuelos">Explorar otros vuelos</Link>} /> : available === 0 ? <AsyncState kind="empty" title="Este vuelo está lleno" message="Por ahora no quedan asientos disponibles en esta ruta." action={<Link className="button button-secondary" to="/vuelos">Ver otros vuelos</Link>} /> : grouped.length === 0 ? <AsyncState kind="empty" title="No hay asientos de esta clase" message="Prueba con otra clase para ver los asientos de este vuelo." /> : (
           <div className="seat-map-wrap">
             {grouped.map((group) => <section className="seat-class" key={group.clase} aria-label={`Clase ${classLabel(group.clase)}`}><div className="seat-class-heading"><h3>{classLabel(group.clase)}</h3><span>{seats.filter((seat) => seat.clase === group.clase && !seat.ocupado).length} disponibles</span></div><div className="seat-map-scroll"><div className="seat-map">{group.filas.map(({ fila, asientos: row }) => <div className="seat-row" key={`${group.clase}-${fila}`}><span className="row-number">{fila}</span><div className="seat-group">{row.map((seat) => {
               const chosen = seat.numero === selected
