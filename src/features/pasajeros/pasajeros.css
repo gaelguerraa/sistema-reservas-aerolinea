@@ -1,0 +1,139 @@
+.pasajeros-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+}
+
+.pasajeros-link-danger {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.pasajeros-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: .8rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.pasajeros-count {
+  margin: 0 0 .6rem;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.pasajeros-notice {
+  margin-bottom: 1rem;
+}
+
+.pasajeros-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-top: .9rem;
+}
+
+.pasajeros-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.pasajeros-summary dt {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.pasajeros-summary dd {
+  margin: .2rem 0 0;
+  color: var(--navy);
+  font-size: 1.1rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.pasajeros-reservas-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: .8rem;
+}
+
+.pasajeros-reservas-header h2 {
+  margin: 0;
+}
+
+.pasajeros-select {
+  min-height: 2.55rem;
+  padding: .45rem .65rem;
+  border: 1px solid #aebcc7;
+  border-radius: .3rem;
+  background: #fff;
+  color: #172b3c;
+}
+
+.pasajeros-estado {
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 99px;
+  font-size: .75rem;
+  font-weight: 700;
+  background: #edf2f5;
+  color: var(--navy);
+}
+
+.pasajeros-estado.is-confirmada {
+  background: #e3f3ea;
+  color: #165b33;
+}
+
+.pasajeros-estado.is-pendiente {
+  background: #fff4dd;
+  color: #7a4e08;
+}
+
+.pasajeros-estado.is-cancelada {
+  background: #f8eaea;
+  color: #8b2020;
+}
+
+.pasajeros-form {
+  display: grid;
+  gap: 1.1rem;
+  max-width: 640px;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  border: 1px solid var(--line);
+  border-radius: .45rem;
+  background: var(--surface);
+}
+
+.pasajeros-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+@media (max-width: 720px) {
+  .pasajeros-filters {
+    grid-template-columns: 1fr;
+  }
+}
