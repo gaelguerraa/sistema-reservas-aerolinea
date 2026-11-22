@@ -1,0 +1,135 @@
+.vuelos-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+.vuelos-filters {
+    display: grid;
+    grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+    gap: .8rem;
+    align-items: end;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: .4rem;
+    background: var(--surface);
+}
+
+.vuelos-count {
+    margin: 0 0 .6rem;
+    color: var(--muted);
+    font-size: .88rem;
+}
+
+.vuelos-notice {
+    margin-bottom: 1rem;
+}
+
+.vuelos-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin: 0 0 1.5rem;
+    padding: 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: .4rem;
+    background: var(--surface);
+}
+
+.vuelos-summary dt {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.vuelos-summary dd {
+    margin: .2rem 0 0;
+    color: var(--navy);
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.vuelos-seats-group {
+    margin-bottom: 1.5rem;
+}
+
+.vuelos-seats-group h3 {
+    margin: 0 0 .6rem;
+    font-size: 1rem;
+}
+
+.vuelos-seats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: .45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.vuelos-seat {
+    display: grid;
+    padding: .4rem .5rem;
+    border: 1px solid var(--line);
+    border-radius: .3rem;
+    background: #fff;
+    text-align: center;
+}
+
+.vuelos-seat small {
+    color: var(--muted);
+}
+
+.vuelos-seat.is-taken {
+    border-color: #d9a5a5;
+    background: #f8eaea;
+}
+
+.vuelos-seat.is-taken small {
+    color: #8b2020;
+    font-weight: 700;
+}
+
+.vuelos-form {
+    display: grid;
+    gap: 1.1rem;
+    max-width: 760px;
+    padding: clamp(1rem, 3vw, 1.6rem);
+    border: 1px solid var(--line);
+    border-radius: .45rem;
+    background: var(--surface);
+}
+
+.vuelos-form fieldset {
+    display: grid;
+    gap: .8rem;
+    margin: 0;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: .35rem;
+}
+
+.vuelos-form legend {
+    padding: 0 .4rem;
+    color: var(--navy);
+    font-weight: 700;
+}
+
+.vuelos-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem;
+}
+
+.vuelos-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+@media (max-width: 820px) {
+    .vuelos-filters {
+        grid-template-columns: 1fr;
+    }
+}
