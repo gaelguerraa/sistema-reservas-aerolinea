@@ -1,0 +1,119 @@
+.reservas-search {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: end;
+  gap: .8rem;
+  max-width: 760px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.reservas-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.reservas-form {
+  display: grid;
+  max-width: 720px;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.reservas-notice {
+  margin-bottom: 1rem;
+  padding: .8rem 1rem;
+  border-left: 3px solid var(--teal);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.reservas-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.reservas-summary dt {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.reservas-summary dd {
+  margin: .2rem 0 0;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.reservas-status {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 99px;
+  background: #edf2f5;
+  color: var(--navy);
+  font-size: .82rem;
+}
+
+.reservas-status.is-confirmada {
+  background: #e3f3ea;
+  color: #165b33;
+}
+
+.reservas-status.is-pendiente {
+  background: #fff4dd;
+  color: #7a4e08;
+}
+
+.reservas-status.is-cancelada {
+  background: #f8eaea;
+  color: #8b2020;
+}
+
+.reservas-actions {
+  margin-bottom: 1rem;
+}
+
+.reservas-actions h2 {
+  margin-bottom: .35rem;
+}
+
+.reservas-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: .8rem;
+}
+
+.reservas-locked {
+  padding: .8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .reservas-search {
+    grid-template-columns: 1fr;
+  }
+}
