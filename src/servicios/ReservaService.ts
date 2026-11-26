@@ -9,6 +9,7 @@ import {
   ReservaDuplicadaError,
   TransicionInvalidaError,
   VueloSinDisponibilidadError,
+  VueloNoDisponibleError,
 } from "../errores/erroresDeNegocio";
 import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
 
@@ -24,8 +25,11 @@ export class ReservaService {
 
   /** Asientos de un vuelo que aún no están ocupados por ninguna reserva activa. */
   async consultarDisponibilidad(vueloId: string): Promise<number> {
-    const vuelo = await this.repositorio.obtenerVuelo(vueloId);
+        const vuelo = await this.repositorio.obtenerVuelo(vueloId);
     if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", vueloId);
+
+    // Regla: un vuelo dado de baja no admite reservas nuevas.
+    if (!vuelo.activo) throw new VueloNoDisponibleError(vueloId);
 
     const activas = await this.repositorio.listarReservasActivasPorVuelo(vueloId);
     return vuelo.capacidadTotal - activas.length;

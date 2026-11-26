@@ -3,13 +3,18 @@ import { exigirPasajeroPropio } from "../seguridad";
 import { CatalogoService } from "../../aplicacion/CatalogoService";
 import { consulta, cuerpo, parametros } from "../entrada";
 import { enviarCreado, enviarOk } from "../respuestas";
-import type { CrearPasajeroBody, ParamsId, QueryFiltroEstado } from "../validacion/esquemas";
+import type { CrearPasajeroBody, ParamsId, QueryBuscarPasajeros, QueryFiltroEstado } from "../validacion/esquemas";
 
 export function crearControladorPasajeros(catalogo: CatalogoService) {
   return {
     async registrar(req: Request, res: Response) {
       const pasajero = await catalogo.registrarPasajero(cuerpo<CrearPasajeroBody>(req, res));
       enviarCreado(res, pasajero, `/pasajeros/${pasajero.id}`);
+    },
+
+    async listar(req: Request, res: Response) {
+      const { q } = consulta<QueryBuscarPasajeros>(req, res);
+      enviarOk(res, await catalogo.listarPasajeros(q || undefined));
     },
 
     async obtener(req: Request, res: Response) {

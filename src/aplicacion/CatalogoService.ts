@@ -4,10 +4,13 @@ import { ClaseAsiento, EstadoReserva } from "../entities/enums";
 import { Pasajero } from "../entities/Pasajero";
 import { Reserva } from "../entities/Reserva";
 import { Vuelo } from "../entities/Vuelo";
-import { RecursoNoEncontradoError } from "../errores/erroresDeNegocio";
-import { VueloDuplicadoError } from "../errores/erroresDeNegocio";
-import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
-import { ReservaService } from "../servicios/ReservaService";
+import {
+  RecursoNoEncontradoError,
+  VueloConReservasActivasError,
+  VueloDuplicadoError,
+} from "../errores/erroresDeNegocio";
+import { FiltroReservas, IReservaRepositorio, ReservaAgenda } from "../puertos/IReservaRepositorio"; 
+import {ReservaService } from "../servicios/ReservaService"
 
 export interface DatosVuelo {
   id: string;
@@ -17,6 +20,9 @@ export interface DatosVuelo {
   hora: string;
   asientos: { numero: string; clase: `${ClaseAsiento}` }[];
 }
+
+/** Lo que se puede cambiar de un vuelo ya creado: su id y sus asientos no se editan. */
+export type DatosEdicionVuelo = Pick<DatosVuelo, "origen" | "destino" | "fecha" | "hora">;
 
 export interface DatosPasajero {
   nombre: string;
@@ -51,7 +57,7 @@ export class CatalogoService {
     private readonly reservas: ReservaService
   ) {}
 
-    async listarVuelos(): Promise<Vuelo[]> {
+  async listarVuelos(): Promise<Vuelo[]> {
     return this.repositorio.listarVuelos();
   }
 
@@ -88,7 +94,7 @@ export class CatalogoService {
       canceladas: reservas.filter((reserva) => reserva.estado === EstadoReserva.CANCELADA).length,
     };
   }
-  
+
   // ---------- Vuelos y asientos ----------
   async obtenerVuelo(vueloId: string): Promise<Vuelo> {
     const vuelo = await this.repositorio.obtenerVuelo(vueloId);
@@ -104,23 +110,63 @@ export class CatalogoService {
   }
 
   async registrarVuelo(datos: DatosVuelo): Promise<Vuelo> {
-    return this.repositorio.ejecutarEnVuelo(datos.id, async repo => {
-    // guardarVuelo es un upsert: sin esta revisión un id repetido sobrescribiría el vuelo.
-    if (await repo.obtenerVuelo(datos.id)) {
-      throw new VueloDuplicadoError(datos.id);
-    }
+    return this.repositorio.ejecutarEnVuelo(datos.id, async (repo) => {
+      // guardarVuelo es un upsert: sin esta revisión un id repetido sobrescribiría el vuelo.
+      if (await repo.obtenerVuelo(datos.id)) {
+        throw new VueloDuplicadoError(datos.id);
+      }
 
-    // Mismo formato de id que usa el seeder: "<vuelo>-<numero>" (ej. V100-12A).
-    const asientos = datos.asientos.map(
-      (a) => new Asiento(`${datos.id}-${a.numero}`, datos.id, a.numero, a.clase as ClaseAsiento)
-    );
-    const vuelo = new Vuelo(datos.id, datos.origen, datos.destino, datos.fecha, datos.hora, asientos);
-    await repo.guardarVuelo(vuelo, true);
-    return vuelo;
+      // Mismo formato de id que usa el seeder: "<vuelo>-<numero>" (ej. V100-12A).
+      const asientos = datos.asientos.map(
+        (a) => new Asiento(`${datos.id}-${a.numero}`, datos.id, a.numero, a.clase as ClaseAsiento)
+      );
+      const vuelo = new Vuelo(datos.id, datos.origen, datos.destino, datos.fecha, datos.hora, asientos);
+      await repo.guardarVuelo(vuelo, true);
+      return vuelo;
+    });
+  }
+
+  async actualizarVuelo(vueloId: string, datos: DatosEdicionVuelo): Promise<Vuelo> {
+    return this.repositorio.ejecutarEnVuelo(vueloId, async (repo) => {
+      const actual = await repo.obtenerVuelo(vueloId);
+      if (!actual) throw new RecursoNoEncontradoError("Vuelo", vueloId);
+      const nuevo = new Vuelo(
+        actual.id,
+        datos.origen,
+        datos.destino,
+        datos.fecha,
+        datos.hora,
+        actual.asientos,
+        actual.activo
+      );
+      await repo.actualizarVuelo(nuevo);
+      return nuevo;
+    });
+  }
+
+  /**
+   * Baja lógica: el vuelo deja de salir en el catálogo y de admitir reservas, pero
+   * su historial se conserva. Repetir la baja de un vuelo ya inactivo no falla.
+   */
+  async darDeBajaVuelo(vueloId: string): Promise<{ id: string }> {
+    return this.repositorio.ejecutarEnVuelo(vueloId, async (repo) => {
+      const vuelo = await repo.obtenerVuelo(vueloId);
+      if (!vuelo) throw new RecursoNoEncontradoError("Vuelo", vueloId);
+      if (!vuelo.activo) return { id: vueloId };
+      const activas = await repo.listarReservasActivasPorVuelo(vueloId);
+      if (activas.length > 0) throw new VueloConReservasActivasError(vueloId, activas.length);
+      await repo.actualizarVuelo(
+        new Vuelo(vuelo.id, vuelo.origen, vuelo.destino, vuelo.fecha, vuelo.hora, vuelo.asientos, false)
+      );
+      return { id: vueloId };
     });
   }
 
   // ---------- Pasajeros ----------
+  async listarPasajeros(texto?: string): Promise<Pasajero[]> {
+    return this.repositorio.listarPasajeros(texto);
+  }
+
   async obtenerPasajero(pasajeroId: string): Promise<Pasajero> {
     const pasajero = await this.repositorio.obtenerPasajero(pasajeroId);
     if (!pasajero) throw new RecursoNoEncontradoError("Pasajero", pasajeroId);
@@ -145,5 +191,10 @@ export class CatalogoService {
     const reserva = await this.repositorio.obtenerReserva(reservaId);
     if (!reserva) throw new RecursoNoEncontradoError("Reserva", reservaId);
     return reserva;
+  }
+
+  /** Listado global para la agenda del administrador (una sola consulta, no reserva por reserva). */
+  async listarReservas(filtro: FiltroReservas): Promise<ReservaAgenda[]> {
+    return this.repositorio.listarReservasAgenda(filtro);
   }
 }

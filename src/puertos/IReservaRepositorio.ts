@@ -2,6 +2,7 @@ import { Asiento } from "../entities/Asiento";
 import { Pasajero } from "../entities/Pasajero";
 import { Reserva } from "../entities/Reserva";
 import { Vuelo } from "../entities/Vuelo";
+import { ClaseAsiento, EstadoReserva } from "../entities/enums";
 
 /**
  * Operaciones que el dominio necesita para leer y persistir sus entidades.
@@ -12,6 +13,25 @@ import { Vuelo } from "../entities/Vuelo";
  * datos real no puede responder de forma síncrona. Las operaciones y las
  * reglas de negocio son exactamente las mismas del avance 1.
  */
+/** Filtros opcionales del listado global de reservas. Las fechas son las del vuelo (inclusivas). */
+export interface FiltroReservas {
+  desde?: Date;
+  hasta?: Date;
+  vueloId?: string;
+  estado?: `${EstadoReserva}`;
+  pasajeroId?: string;
+}
+
+/** Reserva con el resumen del vuelo, el asiento y el pasajero que la agenda del panel necesita. */
+export interface ReservaAgenda {
+  id: string;
+  estado: EstadoReserva;
+  fechaCreacion: Date;
+  vuelo: { id: string; origen: string; destino: string; fecha: Date; hora: string };
+  asiento: { id: string; numero: string; clase: ClaseAsiento };
+  pasajero: { id: string; nombre: string };
+}
+
 export interface IReservaRepositorio {
   // Ejecuta las reglas y la escritura como una operación indivisible por vuelo.
   ejecutarEnVuelo<T>(vueloId: string, trabajo: (repo: IReservaRepositorio) => Promise<T>): Promise<T>;
@@ -20,6 +40,12 @@ export interface IReservaRepositorio {
   obtenerVuelo(vueloId: string): Promise<Vuelo | undefined>;
   listarVuelos(): Promise<Vuelo[]>;
   listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date): Promise<Vuelo[]>;
+  /** Vuelos activos cuya fecha cae entre desde y hasta (inclusivas), ordenados por fecha y hora. */
+  listarVuelosPorPeriodo(desde: Date, hasta: Date): Promise<Vuelo[]>;
+  /** Pasajeros ordenados por nombre; con texto, solo los que lo contienen en nombre o contacto. */
+  listarPasajeros(texto?: string): Promise<Pasajero[]>;
+  /** Reservas con su vuelo, asiento y pasajero, ordenadas por fecha y hora del vuelo. */
+  listarReservasAgenda(filtro: FiltroReservas): Promise<ReservaAgenda[]>;
   obtenerAsiento(asientoId: string): Promise<Asiento | undefined>;
   obtenerPasajero(pasajeroId: string): Promise<Pasajero | undefined>;
   obtenerReserva(reservaId: string): Promise<Reserva | undefined>;
@@ -35,6 +61,8 @@ export interface IReservaRepositorio {
 
   // --- Escritura ---
   guardarVuelo(vuelo: Vuelo, soloNuevo?: boolean): Promise<void>;
+  /** Actualiza solo los datos propios del vuelo (origen, destino, fecha, hora, activo); no toca sus asientos. */
+  actualizarVuelo(vuelo: Vuelo): Promise<void>;
   guardarPasajero(pasajero: Pasajero): Promise<void>;
   guardarReserva(reserva: Reserva): Promise<void>;
   actualizarReserva(reserva: Reserva): Promise<void>;

@@ -2,7 +2,12 @@ import { Asiento } from "../entities/Asiento";
 import { Pasajero } from "../entities/Pasajero";
 import { Reserva } from "../entities/Reserva";
 import { Vuelo } from "../entities/Vuelo";
-import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
+import { FiltroReservas, IReservaRepositorio, ReservaAgenda } from "../puertos/IReservaRepositorio";
+
+/** Minúsculas y sin acentos, para que "lopez" encuentre "López" (como la colación de MySQL). */
+const normalizar = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const porFechaYHora = (a: { fecha: Date; hora: string }, b: { fecha: Date; hora: string }) =>
+  +a.fecha - +b.fecha || a.hora.localeCompare(b.hora);
 
 export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   private vuelos = new Map<string, Vuelo>();
@@ -14,7 +19,7 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   }
   private copiarVuelo(v: Vuelo) {
     return new Vuelo(v.id, v.origen, v.destino, new Date(v.fecha), v.hora,
-      v.asientos.map(a => new Asiento(a.id, a.vueloId, a.numero, a.clase)));
+      v.asientos.map(a => new Asiento(a.id, a.vueloId, a.numero, a.clase)), v.activo);
   }
   async ejecutarEnVuelo<T>(_vueloId: string, trabajo: (repo: IReservaRepositorio) => Promise<T>): Promise<T> {
     const anterior = this.turno;
@@ -27,11 +32,43 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
     finally { liberar(); }
   }
   async obtenerVuelo(id: string) { const v = this.vuelos.get(id); return v ? this.copiarVuelo(v) : undefined; }
-  async listarVuelos() { return [...this.vuelos.values()].map(v => this.copiarVuelo(v)); }
+  async listarVuelos() { return [...this.vuelos.values()].filter(v => v.activo).map(v => this.copiarVuelo(v)); }
   async listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date) {
     return [...this.vuelos.values()]
       .filter(v => v.fecha >= desde && v.fecha < hastaExclusiva)
       .map(v => this.copiarVuelo(v));
+  }
+  async listarVuelosPorPeriodo(desde: Date, hasta: Date) {
+    return [...this.vuelos.values()]
+      .filter(v => v.activo && +v.fecha >= +desde && +v.fecha <= +hasta)
+      .sort(porFechaYHora).map(v => this.copiarVuelo(v));
+  }
+  async listarPasajeros(texto?: string) {
+    const q = texto ? normalizar(texto) : "";
+    return [...this.pasajeros.values()]
+      .filter(p => !q || normalizar(p.nombre).includes(q) || normalizar(p.contacto).includes(q))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es") || a.id.localeCompare(b.id))
+      .map(p => new Pasajero(p.id, p.nombre, p.contacto));
+  }
+  async listarReservasAgenda(f: FiltroReservas): Promise<ReservaAgenda[]> {
+    const filas: ReservaAgenda[] = [];
+    for (const r of this.reservas.values()) {
+      const vuelo = this.vuelos.get(r.vueloId), pasajero = this.pasajeros.get(r.pasajeroId);
+      const asiento = vuelo?.asientos.find(a => a.id === r.asientoId);
+      if (!vuelo || !pasajero || !asiento) continue;
+      if (f.vueloId && r.vueloId !== f.vueloId) continue;
+      if (f.estado && r.estado !== f.estado) continue;
+      if (f.pasajeroId && r.pasajeroId !== f.pasajeroId) continue;
+      if (f.desde && +vuelo.fecha < +f.desde) continue;
+      if (f.hasta && +vuelo.fecha > +f.hasta) continue;
+      filas.push({
+        id: r.id, estado: r.estado, fechaCreacion: new Date(r.fechaCreacion),
+        vuelo: { id: vuelo.id, origen: vuelo.origen, destino: vuelo.destino, fecha: new Date(vuelo.fecha), hora: vuelo.hora },
+        asiento: { id: asiento.id, numero: asiento.numero, clase: asiento.clase },
+        pasajero: { id: pasajero.id, nombre: pasajero.nombre },
+      });
+    }
+    return filas.sort((a, b) => porFechaYHora(a.vuelo, b.vuelo) || +a.fechaCreacion - +b.fechaCreacion || a.id.localeCompare(b.id));
   }
   async obtenerAsiento(id: string) {
     for (const v of this.vuelos.values()) {
@@ -62,6 +99,12 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
         throw Object.assign(new Error("El asiento tiene reservas relacionadas."), { code: "P2003" });
     }
     this.vuelos.set(v.id, this.copiarVuelo(v));
+  }
+  async actualizarVuelo(v: Vuelo) {
+    const anterior = this.vuelos.get(v.id);
+    if (!anterior) throw Object.assign(new Error("Vuelo inexistente."), { code: "P2025" });
+    // Solo cambian los datos del vuelo; los asientos se conservan tal cual.
+    this.vuelos.set(v.id, new Vuelo(v.id, v.origen, v.destino, new Date(v.fecha), v.hora, anterior.asientos, v.activo));
   }
   async guardarPasajero(p: Pasajero) { this.pasajeros.set(p.id, new Pasajero(p.id, p.nombre, p.contacto)); }
   async guardarReserva(x: Reserva) { this.reservas.set(x.id, this.copiarReserva(x)); }

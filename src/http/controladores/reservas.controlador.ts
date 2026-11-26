@@ -3,9 +3,9 @@ import { exigirPasajeroPropio } from "../seguridad";
 import { CatalogoService } from "../../aplicacion/CatalogoService";
 import { Reserva } from "../../entities/Reserva";
 import { ReservaService } from "../../servicios/ReservaService";
-import { cuerpo, parametros } from "../entrada";
+import { consulta, cuerpo, parametros } from "../entrada";
 import { enviarCreado, enviarOk } from "../respuestas";
-import type { CambiarEstadoReservaBody, CrearReservaBody, ParamsId } from "../validacion/esquemas";
+import type { CambiarEstadoReservaBody, CrearReservaBody, ParamsId, QueryListarReservas } from "../validacion/esquemas";
 
 export function crearControladorReservas(reservas: ReservaService, catalogo: CatalogoService) {
   /** Cada estado que se puede pedir desde afuera es un caso de uso del dominio. */
@@ -20,6 +20,10 @@ export function crearControladorReservas(reservas: ReservaService, catalogo: Cat
       exigirPasajeroPropio(res, pasajeroId);
       const reserva = await reservas.crearReserva(pasajeroId, vueloId, asientoId);
       enviarCreado(res, reserva, `/reservas/${reserva.id}`);
+    },
+
+      async listar(req: Request, res: Response) {
+      enviarOk(res, await catalogo.listarReservas(consulta<QueryListarReservas>(req, res)));
     },
 
     async obtener(req: Request, res: Response) {

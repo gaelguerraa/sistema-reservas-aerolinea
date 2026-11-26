@@ -4,7 +4,7 @@ import { Pasajero } from "../entities/Pasajero";
 import { Reserva } from "../entities/Reserva";
 import { Vuelo } from "../entities/Vuelo";
 import { ClaseAsiento, EstadoReserva } from "../entities/enums";
-import { IReservaRepositorio } from "../puertos/IReservaRepositorio";
+import { FiltroReservas, IReservaRepositorio, ReservaAgenda } from "../puertos/IReservaRepositorio";
 
 const ACTIVOS: EstadoReserva[] = [EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA];
 
@@ -47,31 +47,88 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
     );
   }
 
-  // ---------- Lectura ----------
-  async obtenerVuelo(vueloId: string): Promise<Vuelo | undefined> {
-    const fila = await this.prisma.vuelo.findUnique({
-      where: { id: vueloId },
-      include: { asientos: { orderBy: { numero: "asc" } } },
-    });
-    if (!fila) return undefined;
+  
+  private aVuelo(fila: {
+    id: string;
+    origen: string;
+    destino: string;
+    fecha: Date;
+    hora: string;
+    activo: boolean;
+    asientos: { id: string; vueloId: string; numero: string; clase: string }[];
+  }): Vuelo {
     return new Vuelo(
       fila.id,
       fila.origen,
       fila.destino,
       fila.fecha,
       fila.hora,
-      fila.asientos.map((a) => this.aAsiento(a))
+      fila.asientos.map((a) => this.aAsiento(a)),
+      fila.activo
     );
   }
-    async listarVuelos(): Promise<Vuelo[]> {
+
+  // ---------- Lectura ----------
+  async obtenerVuelo(vueloId: string): Promise<Vuelo | undefined> {
+    const fila = await this.prisma.vuelo.findUnique({
+      where: { id: vueloId },
+      include: { asientos: { orderBy: { numero: "asc" } } },
+    });
+    return fila ? this.aVuelo(fila) : undefined;
+  }
+
+  async listarVuelos(): Promise<Vuelo[]> {
     const filas = await this.prisma.vuelo.findMany({
+      where: { activo: true },
       include: { asientos: { orderBy: { numero: "asc" } } },
       orderBy: [{ fecha: "asc" }, { hora: "asc" }],
     });
-    return filas.map(
-      (fila) =>
-        new Vuelo(fila.id, fila.origen, fila.destino, fila.fecha, fila.hora, fila.asientos.map((a) => this.aAsiento(a)))
-    );
+    return filas.map((fila) => this.aVuelo(fila));
+  }
+
+  async listarVuelosPorPeriodo(desde: Date, hasta: Date): Promise<Vuelo[]> {
+    const filas = await this.prisma.vuelo.findMany({
+      where: { activo: true, fecha: { gte: desde, lte: hasta } },
+      include: { asientos: { orderBy: { numero: "asc" } } },
+      orderBy: [{ fecha: "asc" }, { hora: "asc" }],
+    });
+    return filas.map((fila) => this.aVuelo(fila));
+  }
+
+  async listarPasajeros(texto?: string): Promise<Pasajero[]> {
+    // Prisma no escapa los comodines de LIKE: sin esto, buscar "%" o "_" traería a todos los pasajeros.
+    const literal = texto?.replace(/[\\%_]/g, "\\$&");
+    const filas = await this.prisma.pasajero.findMany({
+      // Mayúsculas y acentos dependen de la colación de la base (en MySQL por defecto no distingue).
+      where: literal ? { OR: [{ nombre: { contains: literal } }, { contacto: { contains: literal } }] } : undefined,
+      orderBy: [{ nombre: "asc" }, { id: "asc" }],
+    });
+    return filas.map((f) => new Pasajero(f.id, f.nombre, f.contacto));
+  }
+
+  async listarReservasAgenda(filtro: FiltroReservas): Promise<ReservaAgenda[]> {
+    const fecha = {
+      ...(filtro.desde ? { gte: filtro.desde } : {}),
+      ...(filtro.hasta ? { lte: filtro.hasta } : {}),
+    };
+    const filas = await this.prisma.reserva.findMany({
+      where: {
+        ...(filtro.vueloId ? { vueloId: filtro.vueloId } : {}),
+        ...(filtro.estado ? { estado: filtro.estado } : {}),
+        ...(filtro.pasajeroId ? { pasajeroId: filtro.pasajeroId } : {}),
+        ...(Object.keys(fecha).length > 0 ? { vuelo: { fecha } } : {}),
+      },
+      include: { vuelo: true, asiento: true, pasajero: true },
+      orderBy: [{ vuelo: { fecha: "asc" } }, { vuelo: { hora: "asc" } }, { fechaCreacion: "asc" }, { id: "asc" }],
+    });
+    return filas.map((f) => ({
+      id: f.id,
+      estado: f.estado as EstadoReserva,
+      fechaCreacion: f.fechaCreacion,
+      vuelo: { id: f.vuelo.id, origen: f.vuelo.origen, destino: f.vuelo.destino, fecha: f.vuelo.fecha, hora: f.vuelo.hora },
+      asiento: { id: f.asiento.id, numero: f.asiento.numero, clase: f.asiento.clase as ClaseAsiento },
+      pasajero: { id: f.pasajero.id, nombre: f.pasajero.nombre },
+    }));
   }
 
   async listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date): Promise<Vuelo[]> {
@@ -153,6 +210,7 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
         destino: vuelo.destino,
         fecha: vuelo.fecha,
         hora: vuelo.hora,
+        activo: vuelo.activo,
       };
       if (soloNuevo) await tx.vuelo.create({ data: { id: vuelo.id, ...datos } });
       else await tx.vuelo.upsert({
@@ -172,6 +230,14 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
     };
     if ("$transaction" in this.prisma) await this.prisma.$transaction(guardar);
     else await guardar(this.prisma);
+  }
+
+    async actualizarVuelo(vuelo: Vuelo): Promise<void> {
+    // update lanza P2025 si el vuelo no existe (el manejador de errores lo traduce a 404).
+    await this.prisma.vuelo.update({
+      where: { id: vuelo.id },
+      data: { origen: vuelo.origen, destino: vuelo.destino, fecha: vuelo.fecha, hora: vuelo.hora, activo: vuelo.activo },
+    });
   }
 
   async guardarPasajero(pasajero: Pasajero): Promise<void> {

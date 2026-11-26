@@ -4,7 +4,7 @@ import { Vuelo } from "../../entities/Vuelo";
 import { ReservaService } from "../../servicios/ReservaService";
 import { cuerpo, parametros } from "../entrada";
 import { enviarCreado, enviarOk } from "../respuestas";
-import type { CrearVueloBody, ParamsId } from "../validacion/esquemas";
+import type { CrearVueloBody, EditarVueloBody, ParamsId } from "../validacion/esquemas";
 
 /** capacidadTotal es un getter y JSON.stringify no lo incluye solo. */
 function vueloAJson(vuelo: Vuelo) {
@@ -26,6 +26,16 @@ export function crearControladorVuelos(reservas: ReservaService, catalogo: Catal
     async obtener(req: Request, res: Response) {
       const { id } = parametros<ParamsId>(req, res);
       enviarOk(res, vueloAJson(await catalogo.obtenerVuelo(id)));
+    },
+
+        async actualizar(req: Request, res: Response) {
+      const { id } = parametros<ParamsId>(req, res);
+      enviarOk(res, vueloAJson(await catalogo.actualizarVuelo(id, cuerpo<EditarVueloBody>(req, res))));
+    },
+
+    async darDeBaja(req: Request, res: Response) {
+      const { id } = parametros<ParamsId>(req, res);
+      enviarOk(res, await catalogo.darDeBajaVuelo(id));
     },
 
     async disponibilidad(req: Request, res: Response) {

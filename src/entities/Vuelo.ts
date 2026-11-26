@@ -11,7 +11,8 @@ export class Vuelo {
     public readonly destino: string,
     public readonly fecha: Date,
     public readonly hora: string,
-    public readonly asientos: Asiento[]
+    public readonly asientos: Asiento[],
+    public readonly activo: boolean = true
   ) {
     if (asientos.length === 0) {
       throw new Error("Un vuelo debe tener al menos un asiento definido");

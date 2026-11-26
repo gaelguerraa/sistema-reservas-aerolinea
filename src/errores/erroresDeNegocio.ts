@@ -54,3 +54,17 @@ export class TransicionInvalidaError extends DomainError {
 export class VueloDuplicadoError extends DomainError {
   constructor(id: string) { super(`Ya existe un vuelo con id ${id}.`); }
 }
+
+/** Regla: un vuelo con reservas activas (pendientes o confirmadas) no se puede dar de baja. */
+export class VueloConReservasActivasError extends DomainError {
+  constructor(vueloId: string, cantidad: number) {
+    super(`El vuelo ${vueloId} tiene ${cantidad} reserva(s) activa(s). Cancélalas antes de darlo de baja.`);
+  }
+}
+
+/** Regla: un vuelo dado de baja no admite reservas nuevas. */
+export class VueloNoDisponibleError extends DomainError {
+  constructor(vueloId: string) {
+    super(`El vuelo ${vueloId} fue dado de baja y no admite reservas nuevas.`);
+  }
+}

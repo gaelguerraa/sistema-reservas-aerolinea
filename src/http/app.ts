@@ -57,7 +57,6 @@ export function crearApp(deps: Dependencias, origenesPermitidos: string[]) {
   app.use("/vuelos", rutasVuelos(crearControladorVuelos(deps.reservas, deps.catalogo), deps.seguridad));
   app.use("/pasajeros", rutasPasajeros(crearControladorPasajeros(deps.catalogo), deps.seguridad));
   app.use("/reservas", rutasReservas(crearControladorReservas(deps.reservas, deps.catalogo), deps.seguridad));
-
   // 6) Errores: siempre al final. Único lugar donde un error se vuelve respuesta.
   app.use(rutaNoEncontrada);
   app.use(manejadorErrores);

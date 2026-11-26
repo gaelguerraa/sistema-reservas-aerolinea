@@ -7,6 +7,8 @@ import {
   ReservaDuplicadaError,
   TransicionInvalidaError,
   VueloSinDisponibilidadError,
+  VueloConReservasActivasError,
+  VueloNoDisponibleError,
 } from "../../errores/erroresDeNegocio";
 import { AppError } from "./AppError";
 
@@ -28,6 +30,8 @@ const REGLAS_DE_NEGOCIO: Array<[new (...args: any[]) => DomainError, number, str
   [ReservaCompletadaError, 409, "RESERVA_COMPLETADA"],
   [ReservaDuplicadaError, 409, "RESERVA_DUPLICADA"],
   [TransicionInvalidaError, 409, "TRANSICION_INVALIDA"],
+  [VueloConReservasActivasError, 409, "VUELO_CON_RESERVAS_ACTIVAS"],
+  [VueloNoDisponibleError, 409, "VUELO_NO_DISPONIBLE"],
   [RecursoNoEncontradoError, 404, "NO_ENCONTRADO"],
 ];
 

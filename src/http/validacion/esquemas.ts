@@ -66,6 +66,29 @@ export const queryPeriodoResumen = z.strictObject({
   error: "hasta debe ser igual o posterior a desde.",
 });
 
+/** GET /pasajeros?q=ana (busca en nombre y contacto; sin q regresa todos) */
+export const queryBuscarPasajeros = z.strictObject({
+  q: z
+    .string({ error: "q debe ser texto." })
+    .trim()
+    .max(120, "q no puede pasar de 120 caracteres.")
+    .optional(),
+});
+
+/** GET /reservas?desde=&hasta=&vueloId=&estado=&pasajeroId= (todo opcional; las fechas son las del vuelo) */
+export const queryListarReservas = z
+  .strictObject({
+    desde: fechaISO("desde").optional(),
+    hasta: fechaISO("hasta").optional(),
+    vueloId: id("vueloId").optional(),
+    estado: z.enum(ESTADOS, { error: `estado debe ser uno de: ${ESTADOS.join(", ")}.` }).optional(),
+    pasajeroId: id("pasajeroId").optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.desde && v.hasta && v.desde > v.hasta) {
+      ctx.addIssue({ code: "custom", path: ["desde"], message: "desde no puede ser posterior a hasta." });
+    }
+  });
 /* ------------------------------------------------------------------ */
 /* Reservas                                                           */
 /* ------------------------------------------------------------------ */
@@ -100,6 +123,19 @@ const asientoBody = z.strictObject({
   clase: z.enum(["ECONOMICA", "EJECUTIVA"], { error: "clase debe ser ECONOMICA o EJECUTIVA." }),
 });
 
+/** Hora "HH:MM" de 24 horas. */
+const horaVuelo = z
+  .string({ error: "hora es obligatoria y debe ser texto con formato HH:MM." })
+  .trim()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "hora debe tener formato HH:MM (24 horas).");
+
+/** Regla compartida por el alta y la edición de vuelos: el destino no puede ser el origen. */
+const origenDistintoDeDestino = (v: { origen: string; destino: string }, ctx: z.RefinementCtx) => {
+  if (v.origen.toLowerCase() === v.destino.toLowerCase()) {
+    ctx.addIssue({ code: "custom", path: ["destino"], message: "destino debe ser distinto del origen." });
+  }
+};
+
 /** POST /vuelos */
 export const crearVueloBody = z
   .strictObject({
@@ -128,6 +164,16 @@ export const crearVueloBody = z
       vistos.add(a.numero);
     });
   });
+
+  /** PATCH /vuelos/:id (mismas reglas que el alta; el id y los asientos no se editan) */
+export const editarVueloBody = z
+  .strictObject({
+    origen: texto("origen", 2, 80),
+    destino: texto("destino", 2, 80),
+    fecha: fechaISO("fecha"),
+    hora: horaVuelo,
+  })
+  .superRefine(origenDistintoDeDestino);
 
 /** POST /pasajeros */
 export const crearPasajeroBody = z.strictObject({
@@ -178,3 +224,6 @@ export type CrearVueloBody = z.infer<typeof crearVueloBody>;
 export type CrearPasajeroBody = z.infer<typeof crearPasajeroBody>;
 export type RegistroBody = z.infer<typeof registroBody>;
 export type LoginBody = z.infer<typeof loginBody>;
+export type EditarVueloBody = z.infer<typeof editarVueloBody>;
+export type QueryBuscarPasajeros = z.infer<typeof queryBuscarPasajeros>;
+export type QueryListarReservas = z.infer<typeof queryListarReservas>;
