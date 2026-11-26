@@ -1,6 +1,7 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { crearOpenApi } from "./documentacion";
+import { asyncHandler } from "./asyncHandler";
 import { rutasAuth } from "./rutas/auth.rutas";
 import type { Dependencias } from "../composicion";
 import { crearControladorPasajeros } from "./controladores/pasajeros.controlador";
@@ -10,6 +11,9 @@ import { corsRestringido } from "./middlewares/cors";
 import { manejadorErrores, rutaNoEncontrada } from "./middlewares/manejadorErrores";
 import { registrarPeticiones } from "./middlewares/registrarPeticiones";
 import { enviarOk } from "./respuestas";
+import { consulta } from "./entrada";
+import { validar } from "./middlewares/validar";
+import { queryPeriodoResumen, type QueryPeriodoResumen } from "./validacion/esquemas";
 import { rutasPasajeros } from "./rutas/pasajeros.rutas";
 import { rutasReservas } from "./rutas/reservas.rutas";
 import { rutasVuelos } from "./rutas/vuelos.rutas";
@@ -40,6 +44,16 @@ export function crearApp(deps: Dependencias, origenesPermitidos: string[]) {
 
   // Rutas por recurso, con autenticación real.
   app.get("/salud", (_req, res) => enviarOk(res, { estado: "ok", persistencia: deps.persistencia }));
+  app.get(
+    "/admin/resumen",
+    deps.seguridad.autenticar,
+    deps.seguridad.permitirRoles("ADMIN"),
+    validar({ query: queryPeriodoResumen }),
+    asyncHandler(async (req, res) => {
+      const { desde, hasta } = consulta<QueryPeriodoResumen>(req, res);
+      enviarOk(res, await deps.catalogo.resumenOcupacion(desde, hasta));
+    })
+  );
   app.use("/vuelos", rutasVuelos(crearControladorVuelos(deps.reservas, deps.catalogo), deps.seguridad));
   app.use("/pasajeros", rutasPasajeros(crearControladorPasajeros(deps.catalogo), deps.seguridad));
   app.use("/reservas", rutasReservas(crearControladorReservas(deps.reservas, deps.catalogo), deps.seguridad));

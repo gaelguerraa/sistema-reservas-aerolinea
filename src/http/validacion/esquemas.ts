@@ -57,6 +57,15 @@ export const queryFiltroEstado = z.strictObject({
   estado: z.enum(ESTADOS, { error: `estado debe ser uno de: ${ESTADOS.join(", ")}.` }).optional(),
 });
 
+/** GET /admin/resumen?desde=AAAA-MM-DD&hasta=AAAA-MM-DD */
+export const queryPeriodoResumen = z.strictObject({
+  desde: fechaISO("desde"),
+  hasta: fechaISO("hasta"),
+}).refine((periodo) => periodo.desde <= periodo.hasta, {
+  path: ["hasta"],
+  error: "hasta debe ser igual o posterior a desde.",
+});
+
 /* ------------------------------------------------------------------ */
 /* Reservas                                                           */
 /* ------------------------------------------------------------------ */
@@ -162,6 +171,7 @@ export const loginBody = z.strictObject({
 /* ------------------------------------------------------------------ */
 export type ParamsId = z.infer<typeof paramsId>;
 export type QueryFiltroEstado = z.infer<typeof queryFiltroEstado>;
+export type QueryPeriodoResumen = z.infer<typeof queryPeriodoResumen>;
 export type CrearReservaBody = z.infer<typeof crearReservaBody>;
 export type CambiarEstadoReservaBody = z.infer<typeof cambiarEstadoReservaBody>;
 export type CrearVueloBody = z.infer<typeof crearVueloBody>;

@@ -32,6 +32,13 @@ export interface AsientoConEstado {
   ocupado: boolean;
 }
 
+export interface ResumenOcupacion {
+  periodo: { desde: string; hasta: string };
+  ocupacion: { asientosTotales: number; asientosOcupados: number; porcentaje: number };
+  masSolicitados: { vueloId: string; origen: string; destino: string; reservas: number }[];
+  canceladas: number;
+}
+
 /**
  * Consultas y altas que el servicio HTTP necesita y que el dominio no tiene
  * como caso de uso (buscar por id, registrar vuelos y pasajeros). NO contiene
@@ -46,6 +53,40 @@ export class CatalogoService {
 
     async listarVuelos(): Promise<Vuelo[]> {
     return this.repositorio.listarVuelos();
+  }
+
+  async resumenOcupacion(desde: Date, hasta: Date): Promise<ResumenOcupacion> {
+    const hastaExclusiva = new Date(hasta.getTime() + 24 * 60 * 60 * 1000);
+    const vuelos = await this.repositorio.listarVuelosEnPeriodo(desde, hastaExclusiva);
+    const reservas = await this.repositorio.listarReservasPorVuelos(vuelos.map((vuelo) => vuelo.id));
+    const asientosTotales = vuelos.reduce((total, vuelo) => total + vuelo.capacidadTotal, 0);
+    const asientosOcupados = reservas.filter((reserva) => reserva.estaActiva()).length;
+    const conteoPorVuelo = new Map<string, number>();
+    for (const reserva of reservas) {
+      conteoPorVuelo.set(reserva.vueloId, (conteoPorVuelo.get(reserva.vueloId) ?? 0) + 1);
+    }
+
+    const masSolicitados = vuelos
+      .map((vuelo) => ({
+        vueloId: vuelo.id,
+        origen: vuelo.origen,
+        destino: vuelo.destino,
+        reservas: conteoPorVuelo.get(vuelo.id) ?? 0,
+      }))
+      .filter((vuelo) => vuelo.reservas > 0)
+      .sort((a, b) => b.reservas - a.reservas || a.vueloId.localeCompare(b.vueloId))
+      .slice(0, 5);
+
+    return {
+      periodo: { desde: desde.toISOString().slice(0, 10), hasta: hasta.toISOString().slice(0, 10) },
+      ocupacion: {
+        asientosTotales,
+        asientosOcupados,
+        porcentaje: asientosTotales === 0 ? 0 : Math.round((asientosOcupados / asientosTotales) * 1000) / 10,
+      },
+      masSolicitados,
+      canceladas: reservas.filter((reserva) => reserva.estado === EstadoReserva.CANCELADA).length,
+    };
   }
   
   // ---------- Vuelos y asientos ----------

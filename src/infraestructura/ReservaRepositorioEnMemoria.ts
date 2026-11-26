@@ -28,6 +28,11 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   }
   async obtenerVuelo(id: string) { const v = this.vuelos.get(id); return v ? this.copiarVuelo(v) : undefined; }
   async listarVuelos() { return [...this.vuelos.values()].map(v => this.copiarVuelo(v)); }
+  async listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date) {
+    return [...this.vuelos.values()]
+      .filter(v => v.fecha >= desde && v.fecha < hastaExclusiva)
+      .map(v => this.copiarVuelo(v));
+  }
   async obtenerAsiento(id: string) {
     for (const v of this.vuelos.values()) {
       const a = v.asientos.find(a => a.id === id);
@@ -44,6 +49,10 @@ export class ReservaRepositorioEnMemoria implements IReservaRepositorio {
   async listarReservasActivasPorAsiento(id: string) { return this.filtrar(r => r.asientoId === id && r.estaActiva()); }
   async listarReservasActivasPorPasajeroYAsiento(p: string, a: string) { return this.filtrar(r => r.pasajeroId === p && r.asientoId === a && r.estaActiva()); }
   async listarReservasPorPasajero(id: string) { return this.filtrar(r => r.pasajeroId === id).sort((a,b) => +a.fechaCreacion - +b.fechaCreacion); }
+  async listarReservasPorVuelos(vueloIds: readonly string[]) {
+    const ids = new Set(vueloIds);
+    return this.filtrar(r => ids.has(r.vueloId));
+  }
   async guardarVuelo(v: Vuelo, soloNuevo = false) {
     if (soloNuevo && this.vuelos.has(v.id)) throw Object.assign(new Error("Vuelo duplicado."), { code: "P2002" });
     // Igual que MySQL: un asiento con historial no puede desaparecer del catálogo.

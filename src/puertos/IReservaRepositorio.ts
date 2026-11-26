@@ -19,6 +19,7 @@ export interface IReservaRepositorio {
   // --- Lectura ---
   obtenerVuelo(vueloId: string): Promise<Vuelo | undefined>;
   listarVuelos(): Promise<Vuelo[]>;
+  listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date): Promise<Vuelo[]>;
   obtenerAsiento(asientoId: string): Promise<Asiento | undefined>;
   obtenerPasajero(pasajeroId: string): Promise<Pasajero | undefined>;
   obtenerReserva(reservaId: string): Promise<Reserva | undefined>;
@@ -30,6 +31,7 @@ export interface IReservaRepositorio {
     asientoId: string
   ): Promise<Reserva[]>;
   listarReservasPorPasajero(pasajeroId: string): Promise<Reserva[]>;
+  listarReservasPorVuelos(vueloIds: readonly string[]): Promise<Reserva[]>;
 
   // --- Escritura ---
   guardarVuelo(vuelo: Vuelo, soloNuevo?: boolean): Promise<void>;

@@ -38,6 +38,13 @@ export function crearOpenApi() {
       "/auth/login": { post: operacion("Iniciar sesión y obtener JWT por 15 minutos", "Autenticación", false, loginBody) },
       "/auth/me": { get: operacion("Ver el usuario de la credencial", "Autenticación", true) },
       "/usuarios": { get: operacion("Listar usuarios sin contraseñas (ADMIN)", "Administración", true) },
+      "/admin/resumen": { get: {
+        ...operacion("Consultar ocupación, vuelos más solicitados y cancelaciones (ADMIN)", "Administración", true),
+        parameters: [
+          { name: "desde", in: "query", required: true, schema: { type: "string", format: "date" } },
+          { name: "hasta", in: "query", required: true, schema: { type: "string", format: "date" } },
+        ],
+      } },
       "/vuelos": { post: operacion("Crear vuelo con asientos (ADMIN)", "Vuelos", true, crearVueloBody, true) },
       "/vuelos/{id}": { parameters: id, get: operacion("Ver vuelo", "Vuelos") },
       "/vuelos/{id}/asientos": { parameters: id, get: operacion("Ver asientos y ocupación", "Vuelos") },

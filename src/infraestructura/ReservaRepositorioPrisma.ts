@@ -74,6 +74,22 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
     );
   }
 
+  async listarVuelosEnPeriodo(desde: Date, hastaExclusiva: Date): Promise<Vuelo[]> {
+    const filas = await this.prisma.vuelo.findMany({
+      where: { fecha: { gte: desde, lt: hastaExclusiva } },
+      include: { asientos: { orderBy: { numero: "asc" } } },
+      orderBy: [{ fecha: "asc" }, { hora: "asc" }],
+    });
+    return filas.map((fila) => new Vuelo(
+      fila.id,
+      fila.origen,
+      fila.destino,
+      fila.fecha,
+      fila.hora,
+      fila.asientos.map((a) => this.aAsiento(a))
+    ));
+  }
+
   async obtenerAsiento(asientoId: string): Promise<Asiento | undefined> {
     const fila = await this.prisma.asiento.findUnique({ where: { id: asientoId } });
     return fila ? this.aAsiento(fila) : undefined;
@@ -119,6 +135,14 @@ export class ReservaRepositorioPrisma implements IReservaRepositorio {
       orderBy: { fechaCreacion: "asc" },
     });
     return filas.map((f) => this.aReserva(f));
+  }
+
+  async listarReservasPorVuelos(vueloIds: readonly string[]): Promise<Reserva[]> {
+    if (vueloIds.length === 0) return [];
+    const filas = await this.prisma.reserva.findMany({
+      where: { vueloId: { in: [...vueloIds] } },
+    });
+    return filas.map((fila) => this.aReserva(fila));
   }
 
   // ---------- Escritura ----------
