@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../shared/http/client'
 import { ReservaDetailPage } from './ReservaDetailPage'
+import { ReservaFormPage } from './ReservaFormPage'
 import { ReservasListPage } from './ReservasListPage'
 import { reservasApi } from './reservasApi'
 import type { Reserva } from './types'
@@ -27,6 +28,7 @@ beforeEach(() => {
 function renderModulo(initialEntry = '/app/reservas') {
   const router = createMemoryRouter([
     { path: '/app/reservas', element: <ReservasListPage /> },
+    { path: '/app/reservas/nueva', element: <ReservaFormPage /> },
     { path: '/app/reservas/:id', element: <ReservaDetailPage /> },
   ], { initialEntries: [initialEntry] })
   render(<RouterProvider router={router} />)
@@ -34,23 +36,26 @@ function renderModulo(initialEntry = '/app/reservas') {
 }
 
 describe('Reservas', () => {
-  it('consulta por identificador y advierte que no hay listado global', async () => {
-    vi.spyOn(reservasApi, 'obtener').mockResolvedValue(reserva)
-    const router = renderModulo()
+  it('lista reservas desde el endpoint administrativo global', async () => {
+    vi.spyOn(reservasApi, 'listar').mockResolvedValue([{
+      id: 'rsv-101',
+      estado: 'PENDIENTE',
+      fechaCreacion: '2026-03-15T12:30:00.000Z',
+      vuelo: { id: 'v-202', origen: 'Bogotá', destino: 'Medellín', fecha: '2026-03-16', hora: '08:30' },
+      asiento: { id: '12A', numero: '12A', clase: 'ECONOMICA' },
+      pasajero: { id: 'pas-303', nombre: 'Ana Pérez' },
+    }])
 
-    expect(screen.getByText(/no ofrece un listado global/)).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('Identificador de la reserva'), 'rsv-101')
-    await userEvent.click(screen.getByRole('button', { name: 'Consultar' }))
-
-    expect(await screen.findByRole('heading', { name: 'Detalle de reserva' })).toBeInTheDocument()
-    expect(reservasApi.obtener).toHaveBeenCalledWith('rsv-101', expect.any(AbortSignal))
-    expect(router.state.location.pathname).toBe('/app/reservas/rsv-101')
-  })
-
-  it('muestra validación cuando el identificador está vacío', async () => {
     renderModulo()
-    await userEvent.click(screen.getByRole('button', { name: 'Consultar' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Escribe el identificador')
+
+    expect(await screen.findByText('Ana Pérez')).toBeInTheDocument()
+    expect(reservasApi.listar).toHaveBeenCalledWith({
+      desde: '',
+      hasta: '',
+      vueloId: '',
+      estado: '',
+      pasajeroId: '',
+    }, expect.any(AbortSignal))
   })
 
   it('confirma una reserva pendiente y recarga el estado desde el servicio', async () => {

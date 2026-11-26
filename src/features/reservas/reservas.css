@@ -11,6 +11,28 @@
   background: var(--surface);
 }
 
+.reservas-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
+.reservas-form {
+  display: grid;
+  max-width: 720px;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+}
+
 .reservas-notice {
   margin-bottom: 1rem;
   padding: .8rem 1rem;
