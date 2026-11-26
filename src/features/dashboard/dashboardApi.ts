@@ -1,23 +1,45 @@
-import { ApiError } from '../../shared/http/client'
+import { api } from '../../shared/http/client'
 
-export interface DashboardMetric {
-  id: string
-  label: string
-  value: string
-  description?: string
+export interface DashboardSummary {
+  periodo: { desde: string; hasta: string }
+  ocupacion: {
+    asientosTotales: number
+    asientosOcupados: number
+    porcentaje: number
+  }
+  masSolicitados: Array<{
+    vueloId: string
+    origen: string
+    destino: string
+    reservas: number
+  }>
+  canceladas: number
 }
 
-const fixtureMetrics: DashboardMetric[] = [
-  { id: 'sample-1', label: 'Indicador de ejemplo 1', value: '—', description: 'Valor ilustrativo' },
-  { id: 'sample-2', label: 'Indicador de ejemplo 2', value: '—', description: 'Valor ilustrativo' },
-  { id: 'sample-3', label: 'Indicador de ejemplo 3', value: '—', description: 'Valor ilustrativo' },
-]
+export interface DashboardPeriod {
+  desde: string
+  hasta: string
+}
+
+// Datos deliberadamente ficticios para revisar la interfaz sin el servicio.
+const fixtureSummary: DashboardSummary = {
+  periodo: { desde: '2026-11-01', hasta: '2026-11-30' },
+  ocupacion: { asientosTotales: 250, asientosOcupados: 184, porcentaje: 73.6 },
+  masSolicitados: [
+    { vueloId: 'VUELO-EJEMPLO-01', origen: 'Hermosillo', destino: 'Ciudad de México', reservas: 42 },
+    { vueloId: 'VUELO-EJEMPLO-02', origen: 'Guadalajara', destino: 'Monterrey', reservas: 31 },
+    { vueloId: 'VUELO-EJEMPLO-03', origen: 'Ciudad de México', destino: 'Mérida', reservas: 24 },
+  ],
+  canceladas: 8,
+}
 
 export const dashboardApi = {
-  async get(signal?: AbortSignal): Promise<DashboardMetric[]> {
-    void signal
-    if (import.meta.env.VITE_USE_FIXTURES === 'true') return fixtureMetrics
-    // PENDIENTE: confirmar con Persona 5 el endpoint y las métricas antes de integrar el resumen.
-    throw new ApiError({ status: 501, code: 'RESUMEN_PENDIENTE', message: 'El servicio todavía no ofrece el resumen del tablero. Persona 5 debe confirmar su contrato.' })
+  get(period: DashboardPeriod, signal?: AbortSignal): Promise<DashboardSummary> {
+    if (import.meta.env.VITE_USE_FIXTURES === 'true') {
+      return Promise.resolve({ ...fixtureSummary, periodo: period })
+    }
+
+    const query = new URLSearchParams({ desde: period.desde, hasta: period.hasta })
+    return api.get<DashboardSummary>(`/admin/resumen?${query.toString()}`, { signal })
   },
 }

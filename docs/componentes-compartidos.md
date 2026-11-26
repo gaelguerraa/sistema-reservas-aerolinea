@@ -91,8 +91,8 @@ useAuth() exporta user, role, token, status, notice, login, logout y clearNotice
 
 ## Pendientes coordinados con Persona 5
 
-- El servicio feat-servicio no ofrece endpoint de resumen; el tablero usa tarjetas genéricas y no inventa métricas. VITE_USE_FIXTURES=true habilita solo datos claramente rotulados “Datos de ejemplo”; por defecto está desactivado.
-- El catálogo no está en las ramas revisadas. Confirmar cuáles módulos, rutas y métricas forman parte del avance antes de que las personas de feature cambien los stubs.
+- El catálogo ya define el resumen: ocupación de asientos, cinco vuelos con más reservas y cancelaciones del periodo. El panel consume `GET /admin/resumen?desde=AAAA-MM-DD&hasta=AAAA-MM-DD`; el endpoint está implementado en la rama de trabajo `feat/admin-resumen` del servicio y debe integrarse en `feat-servicio` para operar con datos reales.
+- `VITE_USE_FIXTURES=true` muestra un resumen ficticio claramente rotulado “Datos de ejemplo”; por defecto está desactivado.
 - El contrato de errores existente tiene detalles: [{donde, campo, mensaje}]. Errores típicos: 401 NO_AUTENTICADO, 403 SIN_PERMISO, 404 NO_ENCONTRADO/RUTA_NO_ENCONTRADA, 409 con código de regla o conflicto y 500 ERROR_INTERNO.
-- Vuelos hoy solo tiene alta protegida con ADMIN y consultas públicas; pasajeros, reservas y dashboard tienen operaciones administrativas incompletas. No llamar a rutas de edición/baja o resumen hasta que existan en el servicio.
+- El resumen requiere que `feat/admin-resumen` se integre en `feat-servicio`. Vuelos sigue sin endpoints de edición/baja, y los listados globales de pasajeros y reservas siguen siendo brechas independientes del servicio.
 - Para levantar localmente, copiar .env.example a .env.local, ajustar VITE_API_URL y ejecutar npm install y npm run dev. El panel usa por defecto http://localhost:5173; ese origen debe figurar en CORS_ORIGIN del servicio junto con el origen del storefront.

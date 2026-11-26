@@ -57,6 +57,12 @@ h2 { color: var(--navy); }
 .metric-card { min-height: 150px; padding: 1.1rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--surface); }
 .metric-card h2 { margin: 0; font-size: .9rem; }
 .metric-value { margin: .8rem 0 .2rem; color: var(--navy); font-size: 1.9rem; font-weight: 750; }
+.dashboard-period { display: flex; align-items: end; flex-wrap: wrap; gap: .8rem; margin-block: 1rem 1.25rem; padding: 1rem; border: 1px solid var(--line); border-radius: .4rem; background: #fff; }
+.dashboard-period .form-field { min-width: 180px; }
+.dashboard-period .field-error { flex-basis: 100%; margin: 0; }
+.dashboard-top-flights { margin-top: 1.6rem; }
+.dashboard-top-flights h2 { margin: .25rem 0 .8rem; font-size: 1.1rem; }
+.empty-inline { padding: 1rem; border: 1px solid var(--line); border-radius: .35rem; background: #fff; color: var(--muted); }
 .fixture-banner, .pending-banner, .notice { padding: .75rem .9rem; border: 1px solid #bfd1d8; border-radius: .35rem; background: #edf5f7; color: #294d5b; }
 .pending-banner { border-color: #e6d4a7; background: #fff7e2; color: #614b14; }
 .login-page, .message-page { display: grid; place-items: center; min-height: 100vh; padding: 1.25rem; }
@@ -93,5 +99,7 @@ h2 { color: var(--navy); }
   .sidebar-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sidebar-footnote { margin: .55rem .4rem 0; }
   .metric-grid { grid-template-columns: 1fr; }
+  .dashboard-period { align-items: stretch; flex-direction: column; }
+  .dashboard-period .form-field { min-width: 0; }
   .topbar { align-items: flex-start; }
 }
